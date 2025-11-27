@@ -7,7 +7,7 @@ from pydantic import validate_call
 
 class FeedForwardNeuralNetwork():
     @validate_call
-    def __init__(self, sizes_of_hidden_layers: list[int], epochs: int, learning_rate: float, batch_size: int = 0,regression: bool = False, 
+    def __init__(self, sizes_of_hidden_layers: list[int], epochs: int, learning_rate: float, batch_size: int = 0, regression: bool = False, 
                  hidden_activation_func: None | Literal["relu"] | tuple[Literal["parametric_relu", "elu"], float] = None, 
                  output_activation_func: None | Literal["sigmoid", "softmax", "linear"] = None, 
                  regularization_setting: None | tuple[int, float] = None,
@@ -17,8 +17,8 @@ class FeedForwardNeuralNetwork():
 
         Parameters
         ----------
-        sizes_of_hidden_layers : tuple[int]
-            A tuple where each integer represents the number of neurons in a specific hidden layer. 
+        sizes_of_hidden_layers : list[int]
+            A list where each integer represents the number of neurons in a specific hidden layer. 
             For example, [10, 5] creates two hidden layers with 10 and 5 neurons respectively.
         epochs : int
             The number of complete passes through the training dataset.
@@ -106,7 +106,7 @@ class FeedForwardNeuralNetwork():
                     "parametric_relu": lambda input: parametric_relu(input, *self.hidden_activation_args),
                     "elu": lambda input: elu(input, *self.hidden_activation_args),
                     "softmax": softmax,
-                    "linear": lambda input: input
+                    "linear": linear
                 }
                 if self.hidden_activation_name in activation_name_to_activation_func and self.output_activation_name in activation_name_to_activation_func:
                     return activation_name_to_activation_func[self.hidden_activation_name], activation_name_to_activation_func[self.output_activation_name]
@@ -420,10 +420,66 @@ class FeedForwardNeuralNetwork():
             x = self._check_input(x)
             output = self._forwardPass(x)[1][-1].flatten()
             return output
-    
-# Your solution goes here
+
 from sklearn.exceptions import NotFittedError
 from typing import Self
+from collections import Counter
+
+
+def impurity(classes: np.ndarray | pd.Series, measure: Literal["gini", "entropy"]) -> float:
+    """Calculates region impurity.
+
+    Implements gini and entropy impurity measures.
+
+    Parameters
+    ----------
+    classes : np.ndarray | pd.Series
+        1D array of datapoint classes in region.
+    measure : Literal[&quot;gini&quot;, &quot;entropy&quot;]
+        Impurity measure to use.
+
+    Returns
+    -------
+    float
+        Impurity score
+
+    Raises
+    ------
+    ValueError
+        Wrong measure.
+    """
+    n = len(classes)
+    class_counts = Counter(classes)
+    class_ps = np.array([count/n for c, count in class_counts.items()])
+
+    if measure == "gini":
+        impurity = (class_ps*(1-class_ps)).sum()
+    elif measure == "entropy":
+        impurity = -1*(class_ps*(np.log2(class_ps))).sum()
+    else:
+        raise ValueError("'measure' must be 'gini' or 'entropy'")
+
+    return impurity
+
+def weighted_impurity(regions: tuple[np.ndarray | pd.Series, np.ndarray | pd.Series], impurity_measure: Literal["gini", "entropy"]) -> float:
+    """Calculates weighted impurity for a given split.
+
+    Parameters
+    ----------
+    regions : tuple[np.ndarray | pd.Series, np.ndarray | pd.Series]
+        Classes in regions
+    impurity_measure : Literal[&quot;gini&quot;, &quot;entropy&quot;]
+        Impurity measure to use.
+
+    Returns
+    -------
+    float
+        Weighted impurity score.
+    """
+    R1, R2 = regions
+    n = len(R1) + len(R2)
+    impuri = len(R1)/n*impurity(R1, impurity_measure) + len(R2)/n*impurity(R2, impurity_measure)
+    return impuri
 
 class Node():
     def __init__(self, feature: str | None = None, split_val: float | None = None):
@@ -488,12 +544,6 @@ class MyDecisionTreeClassifier():
         X = self.__correct_input__(X)
     
         return np.array([self._predict(row, self._tree) for _, row in X.iterrows()])
-    
-    def prune(self, X: pd.DataFrame, y: np.ndarray, node: Node) -> tuple[float, Node]:
-        ...
-
-    def _prune(self, X: pd.DataFrame, y: np.ndarray, node: Node) -> tuple[float, Node]:
-        ...
 
     def _predict(self, X: pd.Series, node: Node):
         if node.is_leaf:
