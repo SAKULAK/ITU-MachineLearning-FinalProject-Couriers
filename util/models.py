@@ -1,17 +1,20 @@
-from typing import Callable, Self, Literal
+import os
+from typing import Callable, Self, Literal, Any
 from sklearn.exceptions import NotFittedError
 import pandas as pd
 import numpy as np
 from scipy.sparse import spmatrix
 from pydantic import validate_call
+import time
+import json
 
 class FeedForwardNeuralNetwork():
     @validate_call
     def __init__(self, sizes_of_hidden_layers: list[int], epochs: int, learning_rate: float, batch_size: int = 0, regression: bool = False, 
                  hidden_activation_func: None | Literal["relu"] | tuple[Literal["parametric_relu", "elu"], float] = None, 
                  output_activation_func: None | Literal["sigmoid", "softmax", "linear"] = None, 
-                 regularization_setting: None | tuple[int, float] = None,
-                 random_state: None | int = None, verbose: bool = False):
+                 regularization_setting: None | tuple[int, float] = None, patience: int = 0,
+                 random_state: None | int = None, verbose: bool = False, auto_save: tuple[bool, str] = (True, "ffnn_autosave")) -> None:
         """
         Initialize the Feed Forward Neural Network.
 
@@ -45,10 +48,17 @@ class FeedForwardNeuralNetwork():
             Format: (order, lambda).
             - order (int): 1 for L1 regularization, 2 for L2 regularization.
             - lambda (float): The regularization strength.
+        patience : int, default=0
+            Number of epochs with no improvement after which training will be stopped.
+            If 0, will not stop early.
         random_state : None | int, default=None
             Seed for the random number generator to ensure reproducibility of weight initialization.
         verbose : bool, default=False
             If True, prints loss metrics every 100 epochs during training.
+        auto_save : tuple[bool, str], default=(True, "ffnn_autosave")
+            Configuration for automatic model saving.
+            - First element (bool): If True, the model is saved automatically during and after training.
+            - Second element (str): Prefix for the saved model files.
         """
         self.size_of_hidden_layers = sizes_of_hidden_layers
         self.epochs = epochs
@@ -56,8 +66,11 @@ class FeedForwardNeuralNetwork():
         self.seed = random_state
         self.verbose = verbose
         self.regularization_setting = regularization_setting
+        self.patience = patience if patience else self.epochs
         self._estimator_type = "classifier" if not regression else "regressor"
         self.batch_size = batch_size
+        self.save_auto = auto_save[0]
+        self.save_prefix = auto_save[1]
         if isinstance(hidden_activation_func, tuple):
             self.hidden_activation_name = hidden_activation_func[0]  
             self.hidden_activation_args = hidden_activation_func[1:]
@@ -69,6 +82,110 @@ class FeedForwardNeuralNetwork():
         if self.seed:
             np.random.seed(self.seed)
         self.n_layers = len(sizes_of_hidden_layers)+2
+        
+
+    def save(self, filename_prefix: str) -> None:
+        """
+        Save the trained neural network state to disk.
+
+        This method serializes the object's attributes into two separate files:
+        a JSON file for configuration/hyperparameters and a compressed NumPy
+        archive (.npz) for weights, biases, and other array-like data. It
+        automatically handles the flattening of list attributes containing
+        NumPy arrays (specifically `layer_weights` and `layer_biases`).
+
+        Parameters
+        ----------
+        filename_prefix : str
+            The base path and filename for the saved files. For example,
+            providing 'model' will generate 'model_config.json' and
+            'model_weights.npz'.
+
+        Returns
+        -------
+        None
+        """
+        all_attributes = self.__dict__
+        
+        config = {}
+        arrays = {}
+        
+        for key, value in all_attributes.items():
+            if isinstance(value, list) and all(isinstance(i, np.ndarray) for i in value):
+                if key == "layer_weights":
+                    for idx, arr in enumerate(value):
+                        arrays[f'layer_weights_{idx}'] = arr
+                elif key == "layer_biases":
+                    for idx, arr in enumerate(value):
+                        arrays[f'layer_biases_{idx}'] = arr
+            elif isinstance(value, (list, np.ndarray)) and all(isinstance(i, (float)) for i in value):
+                if isinstance(value, list):
+                    arrays[key] = np.array(value)
+                else:
+                    arrays[key] = value
+            elif isinstance(value, (int, float, str, list, dict, bool, tuple, type(None))):
+                config[key] = value
+            elif not isinstance(value, type(lambda: None)):
+                print(f"Warning: Skipping attribute '{key}' of type {type(value)}")
+
+        with open(f'{filename_prefix}_config.json', 'w') as f:
+            json.dump(config, f, indent=4)
+            
+        np.savez(f'{filename_prefix}_weights.npz', **arrays)
+        if self.verbose:
+            print("\nSaved automatically.")
+
+    @classmethod
+    def load(cls, filename_prefix: str) -> Self:
+        """
+        Load a trained neural network state from disk.
+
+        This class method reads the configuration JSON to instantiate the
+        network with the correct architecture and hyperparameters, then
+        loads the weights and biases from the NumPy archive into the
+        instance. It also reconstructs necessary internal helper methods
+        (activation and error functions).
+
+        Parameters
+        ----------
+        filename_prefix : str
+            The base path and filename used during saving.
+
+        Returns
+        -------
+        NeuralNetwork
+            An instance of the class with restored state, weights, and
+            configuration.
+        """
+        with open(f'{filename_prefix}_config.json', 'r') as f:
+            config: dict[str, Any] = dict(json.load(f))
+        
+        network = cls(config.get("size_of_hidden_layers"), config.get("epochs"), config.get("alpha"))
+
+        for key, value in config.items():
+            setattr(network, key, value)
+        
+        network.activation_func_layers, network.activation_func_output = network._get_activation_funcs()
+        network.error_func = network._get_error_func()
+
+        data: dict[str, np.ndarray] = dict(np.load(f'{filename_prefix}_weights.npz'))
+
+        network.layer_weights = [np.array([]) for i in range(0, network.n_layers-1)]
+        network.layer_biases = [np.array([]) for i in range(0, network.n_layers-1)]
+        
+        for key, value in data.items():
+            if key.startswith('layer_weights_'):
+                idx = int(key.split('_')[-1])
+                network.layer_weights[idx] = value
+            elif key.startswith('layer_biases_'):
+                idx = int(key.split('_')[-1])
+                network.layer_biases[idx] = value
+            else:
+                setattr(network, key, value)
+        
+        if network.verbose:
+            print("Model loaded successfully.")
+        return network
 
     def _get_activation_funcs(self) -> tuple[Callable[[np.ndarray], np.ndarray], Callable[[np.ndarray], np.ndarray]]:
         
@@ -148,8 +265,9 @@ class FeedForwardNeuralNetwork():
         }
         return method_to_count[self.method]
             
-    def _createParameterArray(self, n: int | tuple, mean: float, std: float) -> np.ndarray:
-        return np.random.normal(mean, std, size=n)*0.01 # to help with overflows
+    def _createParameterArray(self, n: tuple, mean: float, std: float) -> np.ndarray:
+        n_in = n[0]
+        return np.random.normal(mean, np.sqrt(2/n_in), size=n) # to help with overflows
 
     def _forwardPass(self, x: np.ndarray) -> tuple[list[np.ndarray], list[np.ndarray]]:
         layer_outputs = list()
@@ -186,8 +304,10 @@ class FeedForwardNeuralNetwork():
             sigmoid: Callable[[np.ndarray], np.ndarray] = lambda a_L: a_L*(1-a_L)
             linear: Callable[[np.ndarray], np.ndarray] = lambda a_L: a_L
 
-            if self.output_activation_name in {"sigmoid", "softmax", "linear"} and self.method in {"Binary Classification", "Multiclass Classification", "Regression"}:
+            if self.output_activation_name in {"sigmoid", "softmax"} and self.method in {"Binary Classification", "Multiclass Classification", "Regression"}:
                 error_func = lambda a_L, y: a_L - y
+            elif self.output_activation_name in {"linear"} and self.method == "Regression":
+                error_func = lambda a_L, y: (a_L - y) / y.shape[0]
             elif self.output_activation_name in {"relu", "parametric_relu", "elu"} and self.method == "Regression":
                 error_func = lambda a_L, y: np.where(a_L < 0, self.hidden_activation_args[0]*(a_L-y), a_L-y)
             else:
@@ -206,6 +326,8 @@ class FeedForwardNeuralNetwork():
                 raise NotImplementedError(f"Gradient function for {self.hidden_activation_name} is not implemented.")
 
         grad_func_hidden, error_term = get_gradient_funcs_of_activations()
+
+        batch_n = y.shape[0] 
         
         for i in range(1, self.n_layers):
             a_L_minus_one = layer_outputs[-i-1]
@@ -215,8 +337,8 @@ class FeedForwardNeuralNetwork():
                 
                 dError = error_term(a_L, y)
 
-                dw = a_L_minus_one.T @ dError
-                db = np.sum(dError, axis = 0, keepdims=True) # sum errors across batch
+                dw = a_L_minus_one.T @ dError / batch_n
+                db = np.sum(dError, axis = 0, keepdims=True) / batch_n
                 
                 # print(dw.shape) # (4,1) 4 nodes in last hidden layer, 1 output node
                 # print(a_L_minus_one.T.shape) # (4, 500)
@@ -234,8 +356,8 @@ class FeedForwardNeuralNetwork():
                 # print(dReLU.shape) # (500,4)
                 # print(dError.shape) # (500,4)
 
-                dw = a_L_minus_one.T @ dError
-                db = np.sum(dError, axis = 0, keepdims=True)
+                dw = a_L_minus_one.T @ dError / batch_n
+                db = np.sum(dError, axis = 0, keepdims=True) / batch_n
 
                 # print(db.shape) # (1,4)
             
@@ -278,6 +400,13 @@ class FeedForwardNeuralNetwork():
         else:
             raise TypeError(f"X is unsupported type {type(input).__name__}, must be np.ndarray, pd.DataFrame or spmatrix")
         return corrected
+    
+    def print_progress(self, i: int, max_i: int, interval: int) -> None:
+            if i % interval == 0:
+                current_time = time.time()
+                time_per_action = (current_time-self.start_time)/(i+1)
+                remaining_time = time_per_action*(max_i-i+1)
+                print(f"{i+1}/{max_i} epochs, Validation loss: {self.val_loss_[-1]:.6f}, Training loss {self.train_loss_[-1]:.6f}. Est. time remaining: {remaining_time:.2f} s.",end="\r")
 
     def fit(self, x: np.ndarray | pd.DataFrame, y: np.ndarray | pd.Series) -> Self:
         """
@@ -323,16 +452,33 @@ class FeedForwardNeuralNetwork():
         self.layer_weights: list[np.ndarray] = [self._createParameterArray((self.size_of_layers[i], self.size_of_layers[i+1]), 0, 1) for i in range(0, self.n_layers-1)]
         self.layer_biases: list[np.ndarray] = [self._createParameterArray((1, self.size_of_layers[i+1]), 0, 1) for i in range(0, self.n_layers-1)]
 
-        if self.batch_size != 0:
-                if self.seed:
-                    np.random.seed(self.seed)
-                data_index = np.array(range(x.shape[0]))[:x.shape[0]-(x.shape[0] % self.batch_size)]
-                np.random.shuffle(data_index)
-                data_index = data_index.reshape(-1, self.batch_size)
+        validation_idx = np.random.choice(x.shape[0], size=int(0.1*x.shape[0]), replace=False)
+        x_val = x[validation_idx, :]
+        y_val = y[validation_idx, :]
+
+        x = np.delete(x, validation_idx, axis=0)
+        y = np.delete(y, validation_idx, axis=0)
+
+        worse_counter = 0
+        data_index = np.array(range(x.shape[0]))[:x.shape[0]-(x.shape[0] % self.batch_size)] if self.batch_size != 0 else np.array([])
+        self.train_loss_: list[float] = list()
+        self.val_loss_: list[float] = list()
+
+        self.start_time = time.time()
+
+        def exit_handler(epoch: int):
+            if self.verbose:
+                print(f"\nTraining stopped at epoch {epoch+1} with validation loss {loss:.6f} and training loss {self.train_loss_[-1]:.6f}.")
+            if self.save_auto:
+                os.makedirs("model_saves", exist_ok=True)
+                self.save(f"model_saves/{self.save_prefix}_epoch_{epoch+1}_final")
 
         for epoch in range(self.epochs):
             if self.batch_size != 0:
-                for indicies in data_index:
+                np.random.shuffle(data_index)
+                data_index_properly_shaped = data_index.reshape(-1, self.batch_size)
+                
+                for indicies in data_index_properly_shaped:
                     weighted_sums, layer_outputs = self._forwardPass(x[indicies, :])
                     grads_w, grads_b = self._gradients(y[indicies, :], weighted_sums, layer_outputs)
                     self.layer_weights, self.layer_biases = self._update_params(grads_w, grads_b, self.alpha)
@@ -341,12 +487,30 @@ class FeedForwardNeuralNetwork():
                 grads_w, grads_b = self._gradients(y, weighted_sums, layer_outputs)
                 self.layer_weights, self.layer_biases = self._update_params(grads_w, grads_b, self.alpha)
 
-            if epoch % 1 == 0 and self.verbose:
-                weighted_sums, layer_outputs = self._forwardPass(x)
-                final_output = layer_outputs[-1]
-                loss = self._get_error_func()(y, final_output)
-                print(f"Epoch {epoch}, Loss: {loss:.6f}")
+            error_func = self._get_error_func()
+            _, validation_outputs = self._forwardPass(x_val)
+            validation_output = validation_outputs[-1]
+            loss = error_func(y_val, validation_output)
+            best_loss = min(loss, best_loss) if epoch > 0 else loss
 
+            self.val_loss_.append(loss)
+            _, train_outputs = self._forwardPass(x)
+            self.train_loss_.append(error_func(y, train_outputs[-1]))
+
+            if loss > best_loss:
+                worse_counter += 1
+            else:
+                worse_counter = 0
+            if worse_counter == self.patience:
+                break
+
+            if self.verbose:
+                self.print_progress(epoch, self.epochs, 1)
+            if epoch % 100 == 0:
+                os.makedirs("temp", exist_ok=True)
+                self.save(f"temp/{self.save_prefix}_epoch_{epoch}")
+
+        exit_handler(epoch)
         self.is_fitted_ = True
         return self
     
