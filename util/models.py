@@ -7,6 +7,24 @@ from scipy.sparse import spmatrix
 from pydantic import validate_call
 import time
 import json
+import shutil
+
+def print_progress(self, i: int, max_i: int, interval: int) -> None:
+        def format_time(seconds: float) -> str:
+            minutes, sec = divmod(seconds, 60)
+            hours, minutes = divmod(minutes, 60)
+            if hours > 0:
+                return f"{int(hours)}h {int(minutes)}m {int(sec)}s"
+            elif minutes > 0:
+                return f"{int(minutes)}m {int(sec)}s"
+            else:
+                return f"{int(sec)}s"
+            
+        if i % interval == 0:
+            current_time = time.time()
+            time_per_action = (current_time-self.start_time)/(i+1)
+            remaining_time = time_per_action*(max_i-i+1)
+            print(f"{i+1}/{max_i} epochs, Validation loss: {self.val_loss_[-1]:.6f}, Training loss {self.train_loss_[-1]:.6f}. Est. time remaining: {format_time(remaining_time)} s.",end="\r")
 
 class FeedForwardNeuralNetwork():
     @validate_call
@@ -14,7 +32,7 @@ class FeedForwardNeuralNetwork():
                  hidden_activation_func: None | Literal["relu"] | tuple[Literal["parametric_relu", "elu"], float] = None, 
                  output_activation_func: None | Literal["sigmoid", "softmax", "linear"] = None, 
                  regularization_setting: None | tuple[int, float] = None, patience: int = 0,
-                 random_state: None | int = None, verbose: bool = False, auto_save: tuple[bool, str] = (True, "ffnn_autosave")) -> None:
+                 random_state: None | int = None, verbose: bool = False, auto_save: tuple[bool, str, bool] = (True, "ffnn_autosave", True)) -> None:
         """
         Initialize the Feed Forward Neural Network.
 
@@ -59,6 +77,7 @@ class FeedForwardNeuralNetwork():
             Configuration for automatic model saving.
             - First element (bool): If True, the model is saved automatically during and after training.
             - Second element (str): Prefix for the saved model files.
+            - Third element (bool): If True, the temporary files created during training are deleted after training finishes successfully.
         """
         self.size_of_hidden_layers = sizes_of_hidden_layers
         self.epochs = epochs
@@ -71,6 +90,7 @@ class FeedForwardNeuralNetwork():
         self.batch_size = batch_size
         self.save_auto = auto_save[0]
         self.save_prefix = auto_save[1]
+        self.delete_temp_after_success = auto_save[2]
         if isinstance(hidden_activation_func, tuple):
             self.hidden_activation_name = hidden_activation_func[0]  
             self.hidden_activation_args = hidden_activation_func[1:]
@@ -156,11 +176,32 @@ class FeedForwardNeuralNetwork():
         NeuralNetwork
             An instance of the class with restored state, weights, and
             configuration.
-        """
-        with open(f'{filename_prefix}_config.json', 'r') as f:
-            config: dict[str, Any] = dict(json.load(f))
         
-        network = cls(config.get("size_of_hidden_layers"), config.get("epochs"), config.get("alpha"))
+        Raises
+        ------
+        FileNotFoundError
+            If the configuration file is not found.
+        KeyError
+            If required keys are missing in the configuration file.
+        """
+        
+        for exit_type in ["_final", "_interrupted"]:
+            try:
+                with open(f'{filename_prefix}{exit_type}_config.json', 'r') as f:
+                    filename_prefix = f'{filename_prefix}{exit_type}'
+                    break
+            except FileNotFoundError:
+                continue
+        try:
+            with open(f'{filename_prefix}_config.json', 'r') as f:
+                config: dict[str, Any] = dict(json.load(f))
+        except FileNotFoundError:
+            raise FileNotFoundError(f"Configuration file '{filename_prefix}_config.json' not found.")
+        
+        try:
+            network = cls(config["size_of_hidden_layers"], config["epochs"], config["alpha"])
+        except KeyError as e:
+            raise KeyError(f"Missing required positional argument in configuration file: {e}")
 
         for key, value in config.items():
             setattr(network, key, value)
@@ -235,7 +276,7 @@ class FeedForwardNeuralNetwork():
             return -np.mean(y_real * np.log(output + 1e-15) + (1 - y_real) * np.log(1 - output + 1e-15))
         
         def MSE(y_real: np.ndarray, output: np.ndarray) -> float:
-            return np.mean(0.5*(output-y_real)**2)
+            return np.mean((output-y_real)**2)
         
         def CrossEntropy(y_real: np.ndarray, output: np.ndarray) -> float:
             return -np.mean(np.sum(y_real * np.log(output + 1e-15), axis=1))
@@ -307,7 +348,7 @@ class FeedForwardNeuralNetwork():
             if self.output_activation_name in {"sigmoid", "softmax"} and self.method in {"Binary Classification", "Multiclass Classification", "Regression"}:
                 error_func = lambda a_L, y: a_L - y
             elif self.output_activation_name in {"linear"} and self.method == "Regression":
-                error_func = lambda a_L, y: (a_L - y) / y.shape[0]
+                error_func = lambda a_L, y: 2*(a_L - y) / y.shape[0]
             elif self.output_activation_name in {"relu", "parametric_relu", "elu"} and self.method == "Regression":
                 error_func = lambda a_L, y: np.where(a_L < 0, self.hidden_activation_args[0]*(a_L-y), a_L-y)
             else:
@@ -399,15 +440,8 @@ class FeedForwardNeuralNetwork():
             return input.toarray()
         else:
             raise TypeError(f"X is unsupported type {type(input).__name__}, must be np.ndarray, pd.DataFrame or spmatrix")
-        return corrected
+        return corrected  
     
-    def print_progress(self, i: int, max_i: int, interval: int) -> None:
-            if i % interval == 0:
-                current_time = time.time()
-                time_per_action = (current_time-self.start_time)/(i+1)
-                remaining_time = time_per_action*(max_i-i+1)
-                print(f"{i+1}/{max_i} epochs, Validation loss: {self.val_loss_[-1]:.6f}, Training loss {self.train_loss_[-1]:.6f}. Est. time remaining: {remaining_time:.2f} s.",end="\r")
-
     def fit(self, x: np.ndarray | pd.DataFrame, y: np.ndarray | pd.Series) -> Self:
         """
         Fit the neural network to the training data.
@@ -449,15 +483,27 @@ class FeedForwardNeuralNetwork():
 
         self.size_of_layers: list[int] = [x.shape[1]] + self.size_of_hidden_layers + [self._get_outup_node_count(y)]
 
-        self.layer_weights: list[np.ndarray] = [self._createParameterArray((self.size_of_layers[i], self.size_of_layers[i+1]), 0, 1) for i in range(0, self.n_layers-1)]
-        self.layer_biases: list[np.ndarray] = [self._createParameterArray((1, self.size_of_layers[i+1]), 0, 1) for i in range(0, self.n_layers-1)]
-
         validation_idx = np.random.choice(x.shape[0], size=int(0.1*x.shape[0]), replace=False)
         x_val = x[validation_idx, :]
         y_val = y[validation_idx, :]
 
         x = np.delete(x, validation_idx, axis=0)
         y = np.delete(y, validation_idx, axis=0)
+
+        best_loss = float('inf')
+
+        for _ in range(15): # get good starting parameters
+            self.layer_weights: list[np.ndarray] = [self._createParameterArray((self.size_of_layers[i], self.size_of_layers[i+1]), 0, 1) for i in range(0, self.n_layers-1)]
+            self.layer_biases: list[np.ndarray] = [self._createParameterArray((1, self.size_of_layers[i+1]), 0, 1) for i in range(0, self.n_layers-1)]
+
+            loss = self.error_func(y, self._forwardPass(x)[1][-1])
+            if loss < best_loss:
+                best_loss = loss
+                best_weights = self.layer_weights
+                best_biases = self.layer_biases
+        
+        self.layer_weights = best_weights
+        self.layer_biases = best_biases
 
         worse_counter = 0
         data_index = np.array(range(x.shape[0]))[:x.shape[0]-(x.shape[0] % self.batch_size)] if self.batch_size != 0 else np.array([])
@@ -466,52 +512,70 @@ class FeedForwardNeuralNetwork():
 
         self.start_time = time.time()
 
-        def exit_handler(epoch: int):
-            if self.verbose:
-                print(f"\nTraining stopped at epoch {epoch+1} with validation loss {loss:.6f} and training loss {self.train_loss_[-1]:.6f}.")
-            if self.save_auto:
-                os.makedirs("model_saves", exist_ok=True)
-                self.save(f"model_saves/{self.save_prefix}_epoch_{epoch+1}_final")
-
-        for epoch in range(self.epochs):
-            if self.batch_size != 0:
-                np.random.shuffle(data_index)
-                data_index_properly_shaped = data_index.reshape(-1, self.batch_size)
-                
-                for indicies in data_index_properly_shaped:
-                    weighted_sums, layer_outputs = self._forwardPass(x[indicies, :])
-                    grads_w, grads_b = self._gradients(y[indicies, :], weighted_sums, layer_outputs)
+        def exit_handler(epoch: int, exit_type: str = "normal") -> None:
+            if exit_type == "normal":
+                self.training_epochs = epoch + 1
+                self.time_taken_ = time.time() - self.start_time
+                if self.verbose:
+                    print(f"\nTraining stopped at epoch {epoch+1} with validation loss {loss:.6f} and training loss {self.train_loss_[-1]:.6f}.")
+                if self.save_auto:
+                    os.makedirs("model_saves", exist_ok=True)
+                    self.save(f"model_saves/{self.save_prefix}_val_loss_{str(round(loss, 6)).split('.')[1]}_final")
+                    if self.is_fitted_ and self.delete_temp_after_success:
+                        shutil.rmtree(temp_folder, ignore_errors=True)
+                        if self.verbose:
+                            print("Temporary files deleted after successful training.")
+            elif exit_type == "interrupt":
+                if self.save_auto:
+                    os.makedirs("model_saves", exist_ok=True)
+                    self.save(f"model_saves/{self.save_prefix}_val_loss_{str(round(loss, 6)).split('.')[1]}_interrupted")
+                    if self.verbose:
+                        print(f"Training interrupted at epoch {epoch}. Model saved.")
+            self.is_fitted_ = True
+            self.exit_type_ = exit_type
+        
+        temp_folder = f"temp/ffnn_{np.random.randint(0, 1_000_000)}"
+        try:
+            for epoch in range(self.epochs):
+                if self.batch_size != 0:
+                    np.random.shuffle(data_index)
+                    data_index_properly_shaped = data_index.reshape(-1, self.batch_size)
+                    
+                    for indicies in data_index_properly_shaped:
+                        weighted_sums, layer_outputs = self._forwardPass(x[indicies, :])
+                        grads_w, grads_b = self._gradients(y[indicies, :], weighted_sums, layer_outputs)
+                        self.layer_weights, self.layer_biases = self._update_params(grads_w, grads_b, self.alpha)
+                else:
+                    weighted_sums, layer_outputs = self._forwardPass(x)
+                    grads_w, grads_b = self._gradients(y, weighted_sums, layer_outputs)
                     self.layer_weights, self.layer_biases = self._update_params(grads_w, grads_b, self.alpha)
-            else:
-                weighted_sums, layer_outputs = self._forwardPass(x)
-                grads_w, grads_b = self._gradients(y, weighted_sums, layer_outputs)
-                self.layer_weights, self.layer_biases = self._update_params(grads_w, grads_b, self.alpha)
 
-            error_func = self._get_error_func()
-            _, validation_outputs = self._forwardPass(x_val)
-            validation_output = validation_outputs[-1]
-            loss = error_func(y_val, validation_output)
-            best_loss = min(loss, best_loss) if epoch > 0 else loss
+                error_func = self._get_error_func()
+                _, validation_outputs = self._forwardPass(x_val)
+                validation_output = validation_outputs[-1]
+                loss = error_func(y_val, validation_output)
+                best_loss = min(loss, best_loss) if epoch > 0 else loss
 
-            self.val_loss_.append(loss)
-            _, train_outputs = self._forwardPass(x)
-            self.train_loss_.append(error_func(y, train_outputs[-1]))
+                self.val_loss_.append(loss)
+                _, train_outputs = self._forwardPass(x)
+                self.train_loss_.append(error_func(y, train_outputs[-1]))
 
-            if loss > best_loss:
-                worse_counter += 1
-            else:
-                worse_counter = 0
-            if worse_counter == self.patience:
-                break
+                if loss > best_loss:
+                    worse_counter += 1
+                else:
+                    worse_counter = 0
+                if worse_counter == self.patience:
+                    break
 
-            if self.verbose:
-                self.print_progress(epoch, self.epochs, 1)
-            if epoch % 100 == 0:
-                os.makedirs("temp", exist_ok=True)
-                self.save(f"temp/{self.save_prefix}_epoch_{epoch}")
-
+                if self.verbose:
+                    print_progress(self, epoch, self.epochs, 1)
+                if epoch % 100 == 0:
+                    os.makedirs(temp_folder, exist_ok=True)
+                    self.save(f"{temp_folder}/{self.save_prefix}_epoch_{epoch}")
+        except KeyboardInterrupt:
+            exit_handler(epoch, exit_type="interrupt")
+            print("WARNING: Training interrupted by user.")
         exit_handler(epoch)
-        self.is_fitted_ = True
         return self
     
     def predict_proba(self, x: np.ndarray | pd.DataFrame) -> np.ndarray:
@@ -584,6 +648,53 @@ class FeedForwardNeuralNetwork():
             x = self._check_input(x)
             output = self._forwardPass(x)[1][-1].flatten()
             return output
+    
+    def get_params(self, deep: bool = True) -> dict:
+        """
+        Get parameters for this estimator.
+
+        Parameters
+        ----------
+        deep : bool, default=True
+            Only for compatibility with sklearn, has no effect.
+
+        Returns
+        -------
+        dict
+            Parameter names mapped to their values.
+        """
+        params = {
+                 "size_of_hidden_layers": self.size_of_hidden_layers, 
+                 "epochs": self.epochs, 
+                 "learning_rate": self.alpha, 
+                 "batch_size": self.batch_size, 
+                 "hidden_activation_func": self.hidden_activation_name, 
+                 "output_activation_func": self.output_activation_name, 
+                 "regularization_setting": self.regularization_setting, 
+                 "patience": self.patience
+        }
+        return params
+    
+    def set_params(self, **params: Any) -> Self:
+        """
+        Set the parameters of this estimator.
+
+        Parameters
+        ----------
+        **params : dict
+            Estimator parameters.
+
+        Returns
+        -------
+        FeedForwardNeuralNetwork
+            Returns self.
+        """
+        for key, value in params.items():
+            if hasattr(self, key):
+                setattr(self, key, value)
+            else:
+                print(f"WARNING: Invalid parameter '{key}' for estimator {self.__class__.__name__}.")
+        return self
 
 from sklearn.exceptions import NotFittedError
 from typing import Self
