@@ -13,22 +13,22 @@ def print_progress(self, i: int, max_i: int, interval: int) -> None:
         def format_time(seconds: float) -> str:
             minutes, sec = divmod(seconds, 60)
             hours, minutes = divmod(minutes, 60)
-            if hours > 0:
-                return f"{int(hours)}h {int(minutes)}m {int(sec)}s"
-            elif minutes > 0:
-                return f"{int(minutes)}m {int(sec)}s"
+            if int(hours) > 0:
+                return f"{str(int(hours)).rjust(2,'0')}h {str(int(minutes)).rjust(2,'0')}m {str(int(sec)).rjust(2,'0')}s"
+            elif int(minutes) > 0:
+                return f"{str(int(minutes)).rjust(2,'0')}m {str(int(sec)).rjust(2,'0')}s"
             else:
-                return f"{int(sec)}s"
+                return f"{str(int(sec)).rjust(2,'0')}s"
             
         if i % interval == 0:
             current_time = time.time()
             time_per_action = (current_time-self.start_time)/(i+1)
             remaining_time = time_per_action*(max_i-i+1)
-            print(f"{i+1}/{max_i} epochs, Validation loss: {self.val_loss_[-1]:.6f}, Training loss {self.train_loss_[-1]:.6f}. Est. time remaining: {format_time(remaining_time)} s.",end="\r")
+            print(f"{i+1}/{max_i} epochs, Validation loss: {self.val_loss_[-1]:.6f}, Training loss {self.train_loss_[-1]:.6f}. Est. time remaining: {format_time(remaining_time):>11}",end="\r")
 
 class FeedForwardNeuralNetwork():
     @validate_call
-    def __init__(self, sizes_of_hidden_layers: list[int], epochs: int, learning_rate: float, batch_size: int = 0, regression: bool = False, 
+    def __init__(self, sizes_of_hidden_layers: list[int], epochs: int, learning_rate: float, batch_size: int = 0, regression: bool = False, optimizer: Literal["sgd", "adam"] = "adam",
                  hidden_activation_func: None | Literal["relu"] | tuple[Literal["parametric_relu", "elu"], float] = None, 
                  output_activation_func: None | Literal["sigmoid", "softmax", "linear"] = None, 
                  regularization_setting: None | tuple[int, float] = None, patience: int = 0,
@@ -51,6 +51,10 @@ class FeedForwardNeuralNetwork():
             Determines the estimator type.
             - If True: Configures the network for regression tasks.
             - If False: Configures the network for classification tasks.
+        optimizer : Literal["sgd", "adam"], default="adam"
+            The optimization algorithm used for training.
+            - "sgd": Stochastic Gradient Descent.
+            - "adam": Adam optimizer.
         hidden_activation_func : None | str | tuple, default=None
             The activation function applied to hidden layers.
             - If None: Automatically selected based on task type.
@@ -65,6 +69,7 @@ class FeedForwardNeuralNetwork():
             Configuration for regularization.
             Format: (order, lambda).
             - order (int): 1 for L1 regularization, 2 for L2 regularization.
+                * In Adam optimizer, L2 regularization is implemented as decoupled weight decay.
             - lambda (float): The regularization strength.
         patience : int, default=0
             Number of epochs with no improvement after which training will be stopped.
@@ -85,6 +90,7 @@ class FeedForwardNeuralNetwork():
         self.alpha = learning_rate
         self.seed = random_state
         self.verbose = verbose
+        self.optimizer = optimizer
         self.regularization_setting = regularization_setting
         self.patience = patience if patience else self.epochs
         self._estimator_type = "classifier" if not regression else "regressor"
@@ -343,8 +349,8 @@ class FeedForwardNeuralNetwork():
             parametric_relu: Callable[[np.ndarray], np.ndarray] = lambda w: np.where(w <= 0, self.hidden_activation_args[0], 1)
             elu: Callable[[np.ndarray], np.ndarray] = lambda w: np.where(w <= 0, self.hidden_activation_args[0]*np.exp(w), 1)
 
-            sigmoid: Callable[[np.ndarray], np.ndarray] = lambda a_L: a_L*(1-a_L)
-            linear: Callable[[np.ndarray], np.ndarray] = lambda a_L: a_L
+            sigmoid: Callable[[np.ndarray], np.ndarray] = lambda z: (s := 1/(1+np.exp(-z)))*(1-s)
+            linear: Callable[[np.ndarray], np.ndarray] = lambda z: 1
 
             if self.output_activation_name in {"sigmoid", "softmax"} and self.method in {"Binary Classification", "Multiclass Classification", "Regression"}:
                 error_func = lambda a_L, y: a_L - y
@@ -407,29 +413,65 @@ class FeedForwardNeuralNetwork():
             grads_b[-i] = db
         
         return grads_w, grads_b
+    
+    def _regularization_term(self, param: np.ndarray) -> np.ndarray:
+            reg_order = None
+            reg_lambda = 0.0
 
-    def _update_params(self, grads_w: list[np.ndarray], grads_b: list[np.ndarray], alpha: float) -> tuple[list[np.ndarray], list[np.ndarray]]:
+            if self.regularization_setting:
+                reg_order, reg_lambda = self.regularization_setting
+
+            if reg_order == 2:
+                return reg_lambda * param
+            elif reg_order == 1:
+                return reg_lambda * np.sign(param)
+            else:
+                return np.zeros_like(param)
+
+    def _update_params(self, grads_w: list[np.ndarray], grads_b: list[np.ndarray], alpha: float, processed_batches: int) -> None:
         assert len(self.layer_weights) == len(grads_w)
         assert len(self.layer_biases) == len(grads_b)
-
-        reg_order = None
-        reg_lambda = 0.0
-
-        if self.regularization_setting:
-            reg_order, reg_lambda = self.regularization_setting
-
-        for i in range(len(grads_w)):
-            reg_term = np.zeros_like(self.layer_weights[i])
-            
-            if reg_order == 2:
-                reg_term = reg_lambda * self.layer_weights[i]
-            elif reg_order == 1:
-                reg_term = reg_lambda * np.sign(self.layer_weights[i])
-                
-            self.layer_weights[i] -= alpha * (grads_w[i] + reg_term)
-            self.layer_biases[i] -= alpha*grads_b[i]
         
-        return self.layer_weights, self.layer_biases
+        # Stochastic Gradient Descent update
+        def sgd_update() -> None:
+            for i in range(len(grads_w)):
+                reg_term = self._regularization_term(self.layer_weights[i])
+                self.layer_weights[i] -= alpha * (grads_w[i] + reg_term)
+                self.layer_biases[i] -= alpha*grads_b[i]
+            
+        def momentum_update(grad: np.ndarray, m_t_minus_one: np.ndarray, beta: float = 0.9) -> tuple[np.ndarray, np.ndarray]:
+            m_t = beta * m_t_minus_one + (1 - beta) * grad
+            return m_t
+        
+        def RMSprop_update(grad: np.ndarray, v_t_minus_one: np.ndarray, beta: float = 0.999, epsilon: float = 1e-15) -> tuple[np.ndarray, np.ndarray]:
+            v_t = beta * v_t_minus_one + (1 - beta) * (grad ** 2)
+            return v_t
+        
+        def adamW_update(processed_batches: int) -> None:
+            beta1 = 0.9
+            beta2 = 0.999
+            epsilon = 1e-6
+            
+            for i in range(len(grads_w)):
+                reg_term = self._regularization_term(self.layer_weights[i])
+
+                self.m_w[i] = momentum_update(grads_w[i], self.m_w[i], beta1)
+                self.v_w[i] = RMSprop_update(grads_w[i], self.v_w[i], beta2, epsilon)
+                
+                self.m_b[i] = momentum_update(grads_b[i], self.m_b[i], beta1)
+                self.v_b[i] = RMSprop_update(grads_b[i], self.v_b[i], beta2, epsilon)
+                m_w_corrected = self.m_w[i] / (1 - beta1 ** (processed_batches))
+                v_w_corrected = self.v_w[i] / (1 - beta2 ** (processed_batches))
+                m_b_corrected = self.m_b[i] / (1 - beta1 ** (processed_batches))
+                v_b_corrected = self.v_b[i] / (1 - beta2 ** (processed_batches))
+
+                self.layer_weights[i] -= self.alpha * (m_w_corrected / (np.sqrt(v_w_corrected) + epsilon) + reg_term) # decoupled weight decay
+                self.layer_biases[i] -= self.alpha * m_b_corrected / (np.sqrt(v_b_corrected) + epsilon)
+
+        if self.optimizer == "sgd":
+            sgd_update()
+        elif self.optimizer == "adam":
+            adamW_update(processed_batches)
     
     @staticmethod
     def _check_input(input: pd.DataFrame | np.ndarray| spmatrix) -> np.ndarray:
@@ -507,21 +549,32 @@ class FeedForwardNeuralNetwork():
         self.layer_biases = best_biases
 
         worse_counter = 0
-        data_index = np.array(range(x.shape[0]))[:x.shape[0]-(x.shape[0] % self.batch_size)] if self.batch_size != 0 else np.array([])
+        data_index = np.array(x.shape[0])
         self.train_loss_: list[float] = list()
         self.val_loss_: list[float] = list()
 
-        self.start_time = time.time()
+        if self.optimizer == "adam":
+            self.m_w: list[np.ndarray] = [np.zeros_like(w) for w in self.layer_weights]
+            self.v_w: list[np.ndarray] = [np.zeros_like(w) for w in self.layer_weights]
+            self.m_b: list[np.ndarray] = [np.zeros_like(b) for b in self.layer_biases]
+            self.v_b: list[np.ndarray] = [np.zeros_like(b) for b in self.layer_biases]
 
-        def exit_handler(epoch: int, exit_type: str = "normal") -> None:
+
+        def exit_handler(best_weights: list[np.ndarray], best_biases: list[np.ndarray], best_epoch: int, exit_type: str = "normal") -> None:
+            self.layer_weights = best_weights
+            self.layer_biases = best_biases
+            epoch = self.current_epoch
+            val_loss = self.val_loss_[best_epoch]
+            train_loss = self.train_loss_[best_epoch]
+
             if exit_type == "normal":
                 self.training_epochs = epoch + 1
                 self.time_taken_ = time.time() - self.start_time
                 if self.verbose:
-                    print(f"\nTraining stopped at epoch {epoch+1} with validation loss {loss:.6f} and training loss {self.train_loss_[-1]:.6f}.")
+                    print(f"\nTraining stopped at epoch {epoch+1} with best validation loss {val_loss:.6f} and best training loss {train_loss:.6f} from epoch {best_epoch}.")
                 if self.save_auto:
                     os.makedirs("model_saves", exist_ok=True)
-                    self.save(f"model_saves/{self.save_prefix}_val_loss_{str(round(loss, 6)).split('.')[1]}_final")
+                    self.save(f"model_saves/{self.save_prefix}_val_loss_{str(round(val_loss, 6)).split('.')[1]}_final")
                     if self.is_fitted_ and self.delete_temp_after_success:
                         shutil.rmtree(temp_folder, ignore_errors=True)
                         if self.verbose:
@@ -536,21 +589,27 @@ class FeedForwardNeuralNetwork():
             self.exit_type_ = exit_type
         
         temp_folder = f"temp/ffnn_{np.random.randint(0, 1_000_000)}"
-        
+
+        processed_batches = 0
+        def process_batch(x: np.ndarray, y: np.ndarray) -> None:
+            weighted_sums, layer_outputs = self._forwardPass(x)
+            grads_w, grads_b = self._gradients(y, weighted_sums, layer_outputs)
+            self._update_params(grads_w, grads_b, self.alpha, processed_batches)
+
+        self.start_time = time.time()
         for epoch in range(self.epochs):
+            self.current_epoch = epoch
             try:
                 if self.batch_size != 0:
                     np.random.shuffle(data_index)
-                    data_index_properly_shaped = data_index.reshape(-1, self.batch_size)
                     
-                    for indicies in data_index_properly_shaped:
-                        weighted_sums, layer_outputs = self._forwardPass(x[indicies, :])
-                        grads_w, grads_b = self._gradients(y[indicies, :], weighted_sums, layer_outputs)
-                        self.layer_weights, self.layer_biases = self._update_params(grads_w, grads_b, self.alpha)
+                    for batch_start_i in range(0, x.shape[0], self.batch_size):
+                        indicies = data_index[batch_start_i:batch_start_i + self.batch_size]
+                        processed_batches += 1
+                        process_batch(x[indicies, :], y[indicies, :])
                 else:
-                    weighted_sums, layer_outputs = self._forwardPass(x)
-                    grads_w, grads_b = self._gradients(y, weighted_sums, layer_outputs)
-                    self.layer_weights, self.layer_biases = self._update_params(grads_w, grads_b, self.alpha)
+                    processed_batches += 1
+                    process_batch(x, y)
 
                 error_func = self._get_error_func()
                 _, validation_outputs = self._forwardPass(x_val)
@@ -566,19 +625,23 @@ class FeedForwardNeuralNetwork():
                     worse_counter += 1
                 else:
                     worse_counter = 0
+                    best_weights = [w.copy() for w in self.layer_weights]
+                    best_biases = [b.copy() for b in self.layer_biases]
+                    best_epoch = epoch
                 if worse_counter == self.patience:
                     break
 
                 if self.verbose:
-                    print_progress(self, epoch, self.epochs, 1)
-                if epoch % 100 == 0 and self.save_auto:
+                    print_progress(self, self.current_epoch, self.epochs, 1)
+                if self.current_epoch % 100 == 0 and self.save_auto:
                     os.makedirs(temp_folder, exist_ok=True)
-                    self.save(f"{temp_folder}/{self.save_prefix}_epoch_{epoch}")
+                    self.save(f"{temp_folder}/{self.save_prefix}_epoch_{self.current_epoch}")
             except KeyboardInterrupt:
-                exit_handler(epoch, exit_type="interrupt")
+                exit_handler(best_weights, best_biases, best_epoch, exit_type="interrupt")
                 print("WARNING: Training interrupted by user.")
                 return self
-        exit_handler(epoch)
+            
+        exit_handler(best_weights, best_biases, best_epoch, exit_type="normal")
         return self
     
     def predict_proba(self, x: np.ndarray | pd.DataFrame) -> np.ndarray:
