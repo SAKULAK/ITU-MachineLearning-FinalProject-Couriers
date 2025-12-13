@@ -85,30 +85,21 @@ class FeedForwardNeuralNetwork():
             - Second element (str): Prefix for the saved model files.
             - Third element (bool): If True, the temporary files created during training are deleted after training finishes successfully.
         """
-        self.size_of_hidden_layers = sizes_of_hidden_layers
+        self.sizes_of_hidden_layers = sizes_of_hidden_layers
         self.epochs = epochs
-        self.alpha = learning_rate
-        self.seed = random_state
+        self.learning_rate = learning_rate
+        self.random_state = random_state
         self.verbose = verbose
         self.optimizer = optimizer
         self.regularization_setting = regularization_setting
-        self.patience = patience if patience else self.epochs
-        self._estimator_type = "classifier" if not regression else "regressor"
         self.batch_size = batch_size
-        self.save_auto = auto_save[0] if isinstance(auto_save, tuple) else auto_save
-        self.save_prefix = auto_save[1] if isinstance(auto_save, tuple) else "ffnn_autosave"
-        self.delete_temp_after_success = auto_save[2] if isinstance(auto_save, tuple) else True
-        if isinstance(hidden_activation_func, tuple):
-            self.hidden_activation_name = hidden_activation_func[0]  
-            self.hidden_activation_args = hidden_activation_func[1:]
-        else: 
-            self.hidden_activation_name = hidden_activation_func
-            self.hidden_activation_args = (0,)
-        self.output_activation_name = output_activation_func        
-        self.is_fitted_: bool = False
-        if self.seed:
-            np.random.seed(self.seed)
-        self.n_layers = len(sizes_of_hidden_layers)+2
+
+        self.patience = patience
+        self.regression = regression
+        self.auto_save = auto_save
+        self.hidden_activation_func = hidden_activation_func
+        self.output_activation_func = output_activation_func
+        
         
 
     def save(self, filename_prefix: str) -> None:
@@ -465,8 +456,8 @@ class FeedForwardNeuralNetwork():
                 m_b_corrected = self.m_b[i] / (1 - beta1 ** (processed_batches))
                 v_b_corrected = self.v_b[i] / (1 - beta2 ** (processed_batches))
 
-                self.layer_weights[i] -= self.alpha * (m_w_corrected / (np.sqrt(v_w_corrected) + epsilon) + reg_term) # decoupled weight decay
-                self.layer_biases[i] -= self.alpha * m_b_corrected / (np.sqrt(v_b_corrected) + epsilon)
+                self.layer_weights[i] -= self.learning_rate * (m_w_corrected / (np.sqrt(v_w_corrected) + epsilon) + reg_term) # decoupled weight decay
+                self.layer_biases[i] -= self.learning_rate * m_b_corrected / (np.sqrt(v_b_corrected) + epsilon)
 
         if self.optimizer == "sgd":
             sgd_update()
@@ -492,6 +483,23 @@ class FeedForwardNeuralNetwork():
         self : FeedForwardNeuralNetwork
             Returns the fitted instance of the model.
         """
+        self.is_fitted_: bool = False
+        self.patience = self.patience if self.patience else self.epochs
+        self._estimator_type = "classifier" if not self.regression else "regressor"
+        self.save_auto = self.auto_save[0] if isinstance(self.auto_save, tuple) else self.auto_save
+        self.save_prefix = self.auto_save[1] if isinstance(self.auto_save, tuple) else "ffnn_autosave"
+        self.delete_temp_after_success = self.auto_save[2] if isinstance(self.auto_save, tuple) else True
+        if isinstance(self.hidden_activation_func, tuple):
+            self.hidden_activation_name = self.hidden_activation_func[0]  
+            self.hidden_activation_args = self.hidden_activation_func[1:]
+        else: 
+            self.hidden_activation_name = self.hidden_activation_func
+            self.hidden_activation_args = (0,)
+        self.output_activation_name = self.output_activation_func
+        if self.random_state:
+            np.random.seed(self.random_state)
+        self.n_layers = len(self.sizes_of_hidden_layers)+2
+
         x = check_input(x)
         y = check_input(y)
 
@@ -512,7 +520,7 @@ class FeedForwardNeuralNetwork():
         self.activation_func_layers, self.activation_func_output = self._get_activation_funcs()
         self.error_func: Callable[[np.ndarray, np.ndarray], float] = self._get_error_func()
 
-        self.size_of_layers: list[int] = [x.shape[1]] + self.size_of_hidden_layers + [self._get_outup_node_count(y)]
+        self.size_of_layers: list[int] = [x.shape[1]] + self.sizes_of_hidden_layers + [self._get_outup_node_count(y)]
 
         validation_idx = np.random.choice(x.shape[0], size=int(0.1*x.shape[0]), replace=False)
         x_val = x[validation_idx, :]
@@ -582,7 +590,7 @@ class FeedForwardNeuralNetwork():
         def process_batch(x: np.ndarray, y: np.ndarray) -> None:
             weighted_sums, layer_outputs = self._forwardPass(x)
             grads_w, grads_b = self._gradients(y, weighted_sums, layer_outputs)
-            self._update_params(grads_w, grads_b, self.alpha, processed_batches)
+            self._update_params(grads_w, grads_b, self.learning_rate, processed_batches)
 
         self.start_time = time.time()
         for epoch in range(self.epochs):
@@ -631,6 +639,48 @@ class FeedForwardNeuralNetwork():
             
         exit_handler(best_weights, best_biases, best_epoch, exit_type="normal")
         return self
+    
+    def score(self, x: np.ndarray | pd.DataFrame, y: np.ndarray | pd.Series) -> float:
+        """
+        Evaluate the model's performance on the provided data.
+
+        Parameters
+        ----------
+        x : np.ndarray | pd.DataFrame
+            Input data matrix of shape (n_samples, n_features).
+        y : np.ndarray | pd.Series
+            True target values.
+            - For Binary Classification: Shape (n_samples,) or (n_samples, 1).
+            - For Multiclass Classification: One-hot encoded shape (n_samples, n_classes).
+            - For Regression: Shape (n_samples,) or (n_samples, 1).
+
+        Returns
+        -------
+        float
+            Performance metric.
+            - For Classification: Accuracy score.
+            - For Regression: R² score.
+        """
+        def accuracy_score(y_true: np.ndarray, y_pred: np.ndarray) -> float:
+            return np.mean(y_true == y_pred)
+
+        def r2_score(y_true: np.ndarray, y_pred: np.ndarray) -> float:
+            ss_res = np.sum((y_true - y_pred) ** 2)
+            ss_tot = np.sum((y_true - np.mean(y_true)) ** 2)
+            return 1 - ss_res / ss_tot
+        
+        x = check_input(x)
+        y = check_input(y)
+        y_pred = self.predict(x)
+        
+        if self.method in {"Binary Classification", "Multiclass Classification"}:
+            if len(y.shape) == 2 and y.shape[1] > 1:
+                y_true = np.argmax(y, axis=1)
+            else:
+                y_true = y.flatten()
+            return accuracy_score(y_true, y_pred)
+        elif self.method == "Regression":
+            return r2_score(y, y_pred)
     
     def predict_proba(self, x: np.ndarray | pd.DataFrame) -> np.ndarray:
         """
@@ -718,14 +768,19 @@ class FeedForwardNeuralNetwork():
             Parameter names mapped to their values.
         """
         params = {
-                 "size_of_hidden_layers": self.size_of_hidden_layers, 
-                 "epochs": self.epochs, 
-                 "learning_rate": self.alpha, 
-                 "batch_size": self.batch_size, 
-                 "hidden_activation_func": self.hidden_activation_name, 
-                 "output_activation_func": self.output_activation_name, 
-                 "regularization_setting": self.regularization_setting, 
-                 "patience": self.patience
+                 "sizes_of_hidden_layers": self.sizes_of_hidden_layers,
+                 "epochs": self.epochs,
+                 "learning_rate": self.learning_rate,
+                 "random_state": self.random_state,
+                 "verbose": self.verbose,
+                 "optimizer": self.optimizer,
+                 "regularization_setting": self.regularization_setting,
+                 "batch_size": self.batch_size,
+                 "patience": self.patience,
+                 "regression": self.regression,
+                 "auto_save": self.auto_save,
+                 "hidden_activation_func": self.hidden_activation_func,
+                 "output_activation_func": self.output_activation_func
         }
         return params
     
