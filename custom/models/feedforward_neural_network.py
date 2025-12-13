@@ -1,9 +1,9 @@
 import os
 from typing import Callable, Self, Literal, Any
 from sklearn.exceptions import NotFittedError
-import pandas as pd
 import numpy as np
-from scipy.sparse import spmatrix
+import pandas as pd
+from util.general import check_input
 from pydantic import validate_call
 import time
 import json
@@ -473,18 +473,6 @@ class FeedForwardNeuralNetwork():
         elif self.optimizer == "adam":
             adamW_update(processed_batches)
     
-    @staticmethod
-    def _check_input(input: pd.DataFrame | np.ndarray| spmatrix) -> np.ndarray:
-        if isinstance(input, pd.DataFrame) or isinstance(input, pd.Series):
-            corrected = input.to_numpy(copy=True, dtype=float)
-        elif isinstance(input, np.ndarray):
-            return input
-        elif isinstance(input, spmatrix):
-            return input.toarray()
-        else:
-            raise TypeError(f"X is unsupported type {type(input).__name__}, must be np.ndarray, pd.DataFrame or spmatrix")
-        return corrected  
-    
     def fit(self, x: np.ndarray | pd.DataFrame, y: np.ndarray | pd.Series) -> Self:
         """
         Fit the neural network to the training data.
@@ -504,8 +492,8 @@ class FeedForwardNeuralNetwork():
         self : FeedForwardNeuralNetwork
             Returns the fitted instance of the model.
         """
-        x = self._check_input(x)
-        y = self._check_input(y)
+        x = check_input(x)
+        y = check_input(y)
 
         if len(y.shape) == 1:
             y = y.reshape(y.shape[0], 1)
@@ -675,7 +663,7 @@ class FeedForwardNeuralNetwork():
         if self.method == "Regression":
             raise ValueError("Method predict_proba not supported for regression.")
         
-        x = self._check_input(x)
+        x = check_input(x)
         
         _, layer_outputs = self._forwardPass(x)
 
@@ -711,7 +699,7 @@ class FeedForwardNeuralNetwork():
         elif self.method == "Multiclass Classification":
             return np.argmax(self.predict_proba(x), axis=1)
         elif self.method == "Regression":
-            x = self._check_input(x)
+            x = check_input(x)
             output = self._forwardPass(x)[1][-1].flatten()
             return output
     
