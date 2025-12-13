@@ -549,7 +549,7 @@ class FeedForwardNeuralNetwork():
         self.layer_biases = best_biases
 
         worse_counter = 0
-        data_index = np.array(x.shape[0])
+        data_index = np.arange(x.shape[0])
         self.train_loss_: list[float] = list()
         self.val_loss_: list[float] = list()
 
