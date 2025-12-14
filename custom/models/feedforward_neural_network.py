@@ -3,7 +3,7 @@ from typing import Callable, Self, Literal, Any
 from sklearn.exceptions import NotFittedError
 import numpy as np
 import pandas as pd
-from util.general import check_input
+from ..util.general import check_input
 from pydantic import validate_call
 import time
 import json
@@ -531,11 +531,17 @@ class FeedForwardNeuralNetwork():
 
         best_loss = float('inf')
 
+        if self.verbose:
+            print("Initializing parameters...")
         for _ in range(15): # get good starting parameters
             self.layer_weights: list[np.ndarray] = [self._createParameterArray((self.size_of_layers[i], self.size_of_layers[i+1]), 0, 1) for i in range(0, self.n_layers-1)]
             self.layer_biases: list[np.ndarray] = [self._createParameterArray((1, self.size_of_layers[i+1]), 0, 1) for i in range(0, self.n_layers-1)]
 
             loss = self.error_func(y, self._forwardPass(x)[1][-1])
+            if self.verbose:
+                print(f"Current init loss: {loss:.6f}, best loss: {best_loss:.6f}", end="\r")
+                if _ == 14:
+                    print()
             if loss < best_loss:
                 best_loss = loss
                 best_weights = self.layer_weights
@@ -562,12 +568,12 @@ class FeedForwardNeuralNetwork():
             epoch = self.current_epoch
             val_loss = self.val_loss_[best_epoch]
             train_loss = self.train_loss_[best_epoch]
+            if self.verbose:
+                print(f"\nTraining stopped at epoch {epoch+1} with best validation loss {val_loss:.6f} and best training loss {train_loss:.6f} from epoch {best_epoch}.")
 
             if exit_type == "normal":
                 self.training_epochs = epoch + 1
                 self.time_taken_ = time.time() - self.start_time
-                if self.verbose:
-                    print(f"\nTraining stopped at epoch {epoch+1} with best validation loss {val_loss:.6f} and best training loss {train_loss:.6f} from epoch {best_epoch}.")
                 if self.save_auto:
                     os.makedirs("model_saves", exist_ok=True)
                     self.save(f"model_saves/{self.save_prefix}_val_loss_{str(round(val_loss, 6)).split('.')[1]}_final")
@@ -581,6 +587,7 @@ class FeedForwardNeuralNetwork():
                     self.save(f"model_saves/{self.save_prefix}_val_loss_{str(round(loss, 6)).split('.')[1]}_interrupted")
                     if self.verbose:
                         print(f"Training interrupted at epoch {epoch}. Model saved.")
+            
             self.is_fitted_ = True
             self.exit_type_ = exit_type
         
