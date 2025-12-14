@@ -119,7 +119,8 @@ class DecisionTree:
     def _recursive_split(self,node, depth):
         if not self._can_split(node, depth):
             return
-        _, feature, threshold, left, right = self._find_best_split(node)
+        best_split = self._find_best_split(node)
+        _, feature, threshold, left, right = best_split if best_split is not None else (None, None, None, None, None)
         if left is None or right is None: return
         node.split(feature, threshold, self._make_leaf(left), self._make_leaf(right))
         self._recursive_split(node.left, depth + 1)
