@@ -1,208 +1,233 @@
-from sklearn.exceptions import NotFittedError
-from typing import Self, Literal
-from collections import Counter
 import numpy as np
-import pandas as pd
+import heapq
 
 
-def impurity(classes: np.ndarray | pd.Series, measure: Literal["gini", "entropy"]) -> float:
-    """Calculates region impurity.
+class Node:
+    def __init__(self, instances, prediction):
+        self.is_leaf = True 
+        self.instances = instances # Indices of data points in the node 
+        self.prediction = prediction 
 
-    Implements gini and entropy impurity measures.
+    def split(self, feature, threshold, left, right):
+        self.is_leaf = False  # Becomes a decision node
+        self.feature = feature  # Splitting feature
+        self.threshold = threshold  # Threshold value for splitting
+        self.left = left  
+        self.right = right  
 
-    Parameters
-    ----------
-    classes : np.ndarray | pd.Series
-        1D array of datapoint classes in region.
-    measure : Literal["gini", "entropy"]
-        Impurity measure to use.
-
-    Returns
-    -------
-    float
-        Impurity score
-
-    Raises
-    ------
-    ValueError
-        Wrong measure.
-    """
-    n = len(classes)
-    class_counts = Counter(classes)
-    class_ps = np.array([count/n for c, count in class_counts.items()])
-
-    if measure == "gini":
-        impurity = (class_ps*(1-class_ps)).sum()
-    elif measure == "entropy":
-        impurity = -1*(class_ps*(np.log2(class_ps))).sum()
-    else:
-        raise ValueError("'measure' must be 'gini' or 'entropy'")
-
-    return impurity
-
-def weighted_impurity(regions: tuple[np.ndarray | pd.Series, np.ndarray | pd.Series], impurity_measure: Literal["gini", "entropy"]) -> float:
-    """Calculates weighted impurity for a given split.
-
-    Parameters
-    ----------
-    regions : tuple[np.ndarray | pd.Series, np.ndarray | pd.Series]
-        Classes in regions
-    impurity_measure : Literal[&quot;gini&quot;, &quot;entropy&quot;]
-        Impurity measure to use.
-
-    Returns
-    -------
-    float
-        Weighted impurity score.
-    """
-    R1, R2 = regions
-    n = len(R1) + len(R2)
-    impuri = len(R1)/n*impurity(R1, impurity_measure) + len(R2)/n*impurity(R2, impurity_measure)
-    return impuri
-
-class Node():
-    def __init__(self, feature: str | None = None, split_val: float | None = None):
-        self.feature = feature
-        self.split_value = split_val
-        self.label = None
-        self.left_child: Node | None = None
-        self.right_child: Node | None = None
-        self.is_leaf: bool = True
-        self.n_samples: int = 0
-    
-class MyDecisionTreeClassifier():
-    def __init__(self, 
-                  criterion: Literal['gini', 'entropy'] = "gini",
-                  max_depth: int | None = None, 
-                  min_samples_split: float = 2, 
-                  min_samples_leaf: float = 1, 
-                  max_leaf_nodes: int | None = None, 
-                  min_impurity_decrease: float = 0):
-        """Implements Decision Tree Classifier based on Gini or Entropy impurity metrics.
-
-        Parameters
-        ----------
-        criterion : Literal[&#39;gini&#39;, &#39;entropy&#39;], optional
-            Impurity metric to use, by default "gini"
-        max_depth : int | None, optional
-            Maxmimal depth of tree, by default None
-        min_samples_split : float, optional
-            Minimum samples in a node to be able to split the node, by default 2
-        min_samples_leaf : float, optional
-            Minimum samples in a leaf node, by default 1
-        max_leaf_nodes : int | None, optional
-            Maximum number of leaf nodes in tree, by default None
-        min_impurity_decrease : float, optional
-            Minimum impurity decrease to continue splitting, by default 0
-        """
-        self._is_fitted: bool = False
-        self._tree: Node | None = Node()
-        self._n_features_in: int = None
-        self._criterion = criterion
-        self._max_depth = max_depth if isinstance(max_depth, int) else np.inf
-        self._min_samples_split = min_samples_split
-        self._min_samples_leaf = min_samples_leaf
-        self._max_leaf_nodes = max_leaf_nodes if isinstance(max_leaf_nodes, int) else np.inf
-        self._min_impurity_decrease = min_impurity_decrease
-        self._label_type = None
-        self._n_leaves = 0
-    
-    def fit(self, X: pd.DataFrame | np.ndarray, y: pd.Series | np.ndarray) -> Self:
-        X = self.__correct_input__(X)
+class DecisionTree:
+    def __init__(self, criterion='gini', max_depth=None, min_to_split=2, min_samples_leaf = 1, max_leaves=None, min_impurity_decrease = 0.0):
+        self.max_depth = max_depth
+        self.min_to_split = min_to_split
+        self.max_leaves = max_leaves
+        self.min_impurity_decrease = min_impurity_decrease
+        self.min_samples_leaf = min_samples_leaf
+        self.criterion = criterion
         
-        self._label_type = y.dtype
-        if not isinstance(y, np.ndarray):
-            y = np.array(y)
-        self._tree = self._construct_tree(X, y, 0)
-        self._is_fitted = True
+    def fit(self, X, y):
+        if self.criterion == 'gini': self.criterion = self._gini_impurity
+        if self.criterion == 'entropy': self.criterion = self._entropy 
+        self.is_fitted = False
+
+        if np.issubdtype(y.dtype, np.number):
+            self._is_regression = True
+            self.criterion = self._mse
+        else:
+            self._is_regression = False
+
+        if not self._is_regression:
+            self.classes_ = np.unique(y)
+
+        self._data = X
+        self._labels = y
+        #arange to get all the ids of the data for the root node
+        self._root = self._make_leaf(np.arange(len(self._data)))
+        if self.max_leaves is None:
+            self._recursive_split(self._root, 0)
+        else:
+            self._closed_split()
+        self.is_fitted = True
         return self
 
-    def predict(self, X: pd.DataFrame | np.ndarray) -> np.ndarray:
-        if not self._tree:
-            raise NotFittedError("The model has not been fitted yet. Use fit method first.")
-        X = self.__correct_input__(X)
-    
-        return np.array([self._predict(row, self._tree) for _, row in X.iterrows()])
+    def _find_best_split(self, node):
 
-    def _predict(self, X: pd.Series, node: Node):
-        if node.is_leaf:
-            return node.label
-        else:
-            label = self._predict(X, node.left_child) if X[node.feature] < node.split_value else self._predict(X, node.right_child)
-            return label
-            
-    def _construct_tree(self, X: pd.DataFrame, y: np.ndarray, depth: int):
-        def create_leaf_node(X: pd.DataFrame, y: np.ndarray):
-            leaf_node = Node()
-            n = len(y)
-            classes, counts = np.unique(y, return_counts=True)
-            class_props = np.array([c/n for c in counts])
-            leaf_node.label = classes[np.argmax(class_props)]
-            leaf_node.n_samples = len(X)
-            return leaf_node
+        instances = node.instances
+        X = self._data
+        y = self._labels
+        total = len(y)
+        n_samples = len(instances)
+        n_features = X.shape[1]
 
-        if len(X) < self._min_samples_split or \
-            depth > self._max_depth or \
-            len(np.unique(y)) == 1:
-            return create_leaf_node(X,y)
-
-        split_info = self._find_split(X, y)
-        
-        if split_info is None:
-            return create_leaf_node(X,y)
-        best_feature, best_split_val = split_info
-
-        left_mask = X[best_feature] < best_split_val
-        right_mask = X[best_feature] >= best_split_val
-
-        self._n_leaves -= 1 # I am not a leaf node since I split
-        self._n_leaves += 2 # My children are potentially leaves
-
-        internal_node = Node(best_feature, best_split_val)
-        internal_node.left_child = self._construct_tree(X.loc[left_mask, :], y[left_mask], depth + 1)
-        internal_node.right_child = self._construct_tree(X.loc[right_mask, :], y[right_mask], depth + 1)
-        internal_node.is_leaf = False
-        internal_node.n_samples = len(X)
-
-        return internal_node
-
-    def _find_split(self, X_part: pd.DataFrame, y_part: np.ndarray) -> tuple[str, float]:
-        best_impurity = np.inf
+        parent_impurity = self.criterion(instances)
+        best_decrease = -np.inf
         best_feature = None
-        best_split_value = None
+        best_threshold =None
+        best_left = None
+        best_right = None
 
-        parent_impurity = impurity(y_part, self._criterion)
+        if isinstance(self.min_samples_leaf, float):
+            if not (0 < self.min_samples_leaf <= 1):
+                raise ValueError("min_samples_leaf as float must be in (0, 1]")
+            min_leaf = int(np.ceil(self.min_samples_leaf * total))
 
-        features = list(X_part.columns)
-        np.random.shuffle(features)
-        
-        for feature in features:
-            local_X = X_part[feature]
-            pos_spllits = np.sort(np.unique(local_X))
-            if len(pos_spllits) == 1:
-                continue
-            for i, val_1 in enumerate(pos_spllits):
-                if i+1 == len(pos_spllits):
-                    break
-                val_2 = pos_spllits[i+1]
-                val = (val_1+val_2)/2
-                regions = (y_part[local_X < val], y_part[local_X >= val])
-                imp = weighted_impurity(regions, self._criterion)
-                if imp < best_impurity:
-                    best_impurity = imp
+        else:
+            min_leaf = self.min_samples_leaf
+
+        for feature in range(n_features):
+
+            sorted_idx = instances[np.argsort(X[instances, feature])]
+            X_sorted = X[sorted_idx, feature]
+
+            for i in range(1, n_samples):
+
+                left = sorted_idx[:i]
+                right = sorted_idx[i:]
+
+                if i < min_leaf or (n_samples - i) < min_leaf: continue
+
+                if X_sorted[i] == X_sorted[i - 1]:continue
+
+                #midpoint at the start
+                threshold = (X_sorted[i] + X_sorted[i - 1]) / 2.0
+
+                n_left = i
+                n_right = n_samples - i
+
+                left_imp = self.criterion(left)
+                right_imp = self.criterion(right)
+
+                weighted = (n_left / n_samples) * left_imp + (n_right / n_samples) * right_imp
+
+                decrease = parent_impurity - weighted
+
+                if (decrease > best_decrease or
+                (decrease == best_decrease and feature < best_feature) or
+                (decrease == best_decrease and feature == best_feature and threshold < best_threshold)):
+                    
+                    best_decrease = decrease
                     best_feature = feature
-                    best_split_value = val
-                    best_region = regions
-        if  parent_impurity - best_impurity < self._min_impurity_decrease:
-            return None
-        return best_feature, best_split_value 
-    
-    def __correct_input__(self, X: pd.DataFrame | np.ndarray) -> pd.DataFrame:
-        if not isinstance(X, pd.DataFrame) and isinstance(X, np.ndarray):
-            X = pd.DataFrame(X)
-        elif not isinstance(X, pd.DataFrame):
-            raise TypeError(f"X is unsupported type {type(X).__name__}, has to be pd.DataFrame or np.ndarray or pd.Series.")
-        return X
+                    best_threshold = threshold
+                    best_left = left
+                    best_right = right
 
-    def __sklearn_is_fitted__(self):
-        return self._is_fitted
+                if best_feature is None or best_decrease < self.min_impurity_decrease: return None
+
+        return best_decrease, best_feature, best_threshold, best_left, best_right
+    
+
+    
+    def _recursive_split(self,node, depth):
+        if not self._can_split(node, depth):
+            return
+        _, feature, threshold, left, right = self._find_best_split(node)
+        if left is None or right is None: return
+        node.split(feature, threshold, self._make_leaf(left), self._make_leaf(right))
+        self._recursive_split(node.left, depth + 1)
+        self._recursive_split(node.right, depth + 1)
+
+
+    def _make_heap_element(self, node, index, depth):
+        impurity_decrease, feature, threshold, left, right = self._find_best_split(node)
+        if impurity_decrease is None: return None
+
+        # (priority-impurit_decrease, index, depth, node, feature, threshold, left, right)
+        return (-impurity_decrease, index, depth, node, feature, threshold,left,right)
+
+        
+    def _closed_split(self): 
+        heap = [self._make_heap_element(self._root, 0, 0)]
+        heapq.heapify(heap)
+        for i in range (self.max_leaves-1):
+            heap_element = heapq.heappop(heap)
+            priority, index, depth, node, feature, threshold, left, right = heap_element
+            node.split(feature, threshold, self._make_leaf(left), self._make_leaf(right))
+
+            # from binary heap / binary tree array representation
+            # left child index = 2 * i + 1
+            # right child index = 2 * i + 2
+                # index:   0
+                    #     / \
+                    #    1   2
+                    #   / \ / \
+                    #  3  4 5  6
+
+            
+
+            if self._can_split(node.left, depth + 1):
+                heapq.heappush(heap, self._make_heap_element(node.left, 2 * i + 1, depth + 1))
+            if self._can_split(node.right, depth + 1):
+                heapq.heappush(heap, self._make_heap_element(node.right, 2 * i + 2, depth + 1))
+
+            if not heap: break
+
+
+
+    def predict(self, new_data):
+        if not self.is_fitted: raise RuntimeError("This DecisionTree instance is not fitted yet. Call 'fit' first.")
+        data_size = len(new_data) 
+        results = np.zeros(data_size)
+        for i in range(data_size):
+            node = self._root
+            while not node.is_leaf:
+                if new_data[i][node.feature] <= node.threshold:
+                    node = node.left
+                else:
+                    node = node.right
+            results[i] = node.prediction
+        return results
+
+    
+    # for checking conditions before split
+    def _can_split(self, node, depth):
+        reached_max_depth = self.max_depth is None or depth < self.max_depth 
+        reached_min_split = len(node.instances) >= self.min_to_split
+        #Check if the node contains more than one unique lable. Do NOT split if all the labels are equal to the majority class.
+        not_a_single_lable = len(np.unique(self._labels[node.instances])) > 1 
+        return reached_max_depth and reached_min_split and not_a_single_lable
+
+
+    def _make_leaf(self, instances: np.array) ->Node:
+
+        if self._is_regression:
+            prediction = np.mean(self._labels[instances])
+
+        else:
+            labels = self._labels[instances]
+            idx = np.searchsorted(self.classes_ , labels)
+            counts = np.bincount(idx, minlength=len(self.classes_))
+            prediction = self.classes_[counts.argmax()]
+
+        return Node(instances, prediction)
+
+    def get_params(self, deep=True):
+        return {
+            "criterion": self.criterion,
+            "max_depth": self.max_depth,
+            "min_to_split": self.min_to_split,
+            "max_leaves": self.max_leaves,
+            "min_impurity_decrease": self.min_impurity_decrease,
+            "min_samples_leaf": self.min_samples_leaf
+        }
+    
+    def set_params(self, **params):
+        for key, value in params.items():
+            setattr(self, key, value)
+        return self
+
+    def _gini_impurity(self, lables_ids: np.array) -> float:
+        if lables_ids.size == 0: return 0.0
+        _, counts = np.unique(self._labels[lables_ids], return_counts=True)
+        p = counts / counts.sum()
+        return 1.0-sum(p**2)
+
+    def _entropy(self, lables_ids: np.array) -> float:
+        if lables_ids.size == 0: return 0.0
+        _, counts = np.unique(self._labels[lables_ids], return_counts=True)
+        p = counts / counts.sum()
+        p = p[p > 0]
+        return -1*(np.sum(p*np.log2(p)))
+    
+    def _mse(self, label_ids: np.ndarray) -> float:
+        if label_ids.size == 0: return 0.0
+        y = self._labels[label_ids]
+        return np.var(y)
