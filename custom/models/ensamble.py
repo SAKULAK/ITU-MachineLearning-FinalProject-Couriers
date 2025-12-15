@@ -40,7 +40,3 @@ class EnsambleRegressor(RegressorMixin, BaseEstimator):
         meta_features = self._get_meta_features(X)
 
         return self.meta_learner_.predict(meta_features)
-
-
-
-
