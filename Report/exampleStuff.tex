@@ -1,0 +1,57 @@
+\newpage
+
+\begin{table}
+\begin{center}
+\begin{tabular}{ |c|c|c| } 
+ \hline
+ cell1 & cell2 & cell3 \\ 
+ cell4 & cell5 & cell6 \\ 
+ cell7 & cell8 & cell9 \\ 
+ \hline
+\end{tabular}
+\end{center}
+\end{table}
+
+\begin{results}
+    \input{results.tex}
+\end{results}
+
+Math Equations:
+\[
+    \int_{a}^{b} x^2 \,dx
+\]
+
+Citations:
+\cite{PACHECO2020106221}
+
+\bibliographystyle{apalike}
+\bibliography{references.bib}
+
+
+
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=5cm]{images/jellyfish.jpeg}
+    \caption{Egg-Yolk Jellyfish}
+    \label{jellyFish}
+\end{figure}
+
+Pseudocode
+
+\begin{algorithmic}
+    \Require $n \geq 0$
+\Ensure $y = x^n$
+\State $y \Leftarrow 1$
+\State $X \Leftarrow x$
+\State $N \Leftarrow n$
+\While{$N \neq 0$}
+\If{$N$ is even}
+  \State $X \Leftarrow X \times X$
+  \State $N \Leftarrow \frac{N}{2} $  \Comment{This is a comment}
+\ElsIf{$N$ is odd}
+  \State $y \Leftarrow y \times X$
+  \State $N \Leftarrow N - 1$
+\EndIf
+\EndWhile
+\end{algorithmic}

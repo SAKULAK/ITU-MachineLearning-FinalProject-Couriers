@@ -1,0 +1,60 @@
+\documentclass[11pt]{article}
+\usepackage{acl2015}
+\usepackage{times}
+\usepackage{url}
+\usepackage{latexsym}
+\usepackage{graphicx}
+\usepackage{svg}
+\usepackage{hyperref}
+\usepackage{algpseudocode}
+\usepackage{amsmath}
+\usepackage{xcolor}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\nocite{*}
+\graphicspath{ {./images/} }
+
+\title{Risk Assessment of Insurence Policies using Machine Learning Techniques}
+
+\author{
+  \textbf{Lukáš Trstenský, Bartosz Kochanski and Maia Ghionea}\\
+  \texttt{\small \href{https://github.com/SAKULAK/ITU-MachineLearning-FinalProject-Couriers}{https://github.com/SAKULAK/ITU-MachineLearning-FinalProject-Couriers}}
+}
+
+\date{}
+\begin{document}
+\renewcommand{\arraystretch}{1.5}
+\maketitle
+\tableofcontents
+\clearpage
+
+%starts a new section and imports that section from file
+\section{Introduction}
+    \input{sections/introduction.tex}
+
+\section{Data}
+    \input{sections/data.tex}
+
+\section{Features}
+    \input{sections/features.tex}
+
+\section{Method 1}'
+    \input{sections/Method1.tex}
+
+\section{Method 2}
+    \input{sections/Method2.tex}
+    
+\section{Method 3}
+    \input{sections/Method3.tex}
+
+\section{Limitations}
+    \input{sections/limitations.tex}
+
+\section{Conclusion}
+    \input{sections/conclusion.tex}
+
+\bibliographystyle{apalike}
+\bibliography{references.bib}
+
+
+\end{document}

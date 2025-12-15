@@ -1,0 +1,49 @@
+The dataset that we used for this report is the French Motor Third-Part Liability (\texttt{freMTPL2freq}) dataset from the \texttt{CASdatasets} \cite[p.~71]{CASdatasets} R package.
+
+\subsection{Data Format}
+See ~\autoref{tab:dataset-columns} for names and descriptions of the data columns.
+
+\begin{table} [h!]
+    \centering
+    \caption{Data columns and descriptions.}
+    \begin{tabularx}{\linewidth}{|c|X|}
+        \hline
+        \textbf{Name} & \textbf{Description} \\
+        \hline \hline
+        \textbf{IDpol} & Unique policy ID. \\ 
+        \hline
+        \textbf{ClaimNb} & Number of claims made in policy. \\
+        \hline
+        \textbf{Exposure} & Duration of policy in years. \\
+        \hline
+        \textbf{Area} & Density category of driver's residence from "A" for rural area to "F" for urban centre. \\ 
+        \hline
+        \textbf{VehPower} & Power category of car. \\
+        \hline
+        \textbf{VehAge} & Age of car. \\
+        \hline
+        \textbf{DrivAge} & Age of driver. \\
+        \hline
+        \textbf{BonusMalus} & Bonus/malus, between 50 and 350: $<100$ means bonus, $>100$ means malus. \\
+        \hline
+        \textbf{VehBrand} & The car brand divided in the following groups: A- Renaut Nissan and Citroen, B- Volkswagen, Audi, Skoda and Seat, C- Opel, General Motors and Ford, D- Fiat, E- Mercedes Chryslerand BMW, F- Japanese (except Nissan) and Korean, G- other. \\
+        \hline
+        \textbf{VehGas} & Type of gas that the vehicle uses. \\
+        \hline
+        \textbf{Density} & Number of inhabitants per $km^2$ in the city the driver of the car lives in. \\
+        \hline
+        \textbf{Region} & The policy region in France (based on the 1970-2015 classification). \\
+        \hline
+    \end{tabularx}
+    \label{tab:dataset-columns}
+\end{table}
+
+\subsection{Data Cleaning}
+For data cleaning we decided to take a conservative approach minimally modify the data. We concluded that the data did not have any obvious signs of subverting our assumptions, except for the following:
+\begin{enumerate}
+    \item Exposure should be in range $(0, 1]$ since the data was collected over one year, so we assume that any value above one is an error, and we set it equal to the max, so 1.
+    \item We removed any data points where $VehAge>30$ as this is the cutoff at which Vehicles become classified as historic cars, and are treated differently.
+\end{enumerate}
+
+\subsection{Visualization}
+yappity
