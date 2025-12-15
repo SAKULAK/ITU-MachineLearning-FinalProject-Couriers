@@ -110,7 +110,7 @@ class DecisionTree:
                     best_left = left
                     best_right = right
 
-                if best_feature is None or best_decrease < self.min_impurity_decrease: return None
+                if best_feature is None or best_decrease <= self.min_impurity_decrease: return None
 
         return best_decrease, best_feature, best_threshold, best_left, best_right
     
@@ -231,4 +231,5 @@ class DecisionTree:
     def _mse(self, label_ids: np.ndarray) -> float:
         if label_ids.size == 0: return 0.0
         y = self._labels[label_ids]
-        return np.var(y)
+        mean = np.mean(y)
+        return np.mean((y - mean) ** 2)
