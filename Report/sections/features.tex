@@ -1,4 +1,14 @@
-describe why features r important/what they r used for here etc etc
+Although we said that we believe that there is not much to clean in the data, we opted not to use some aspects of it. Namely, we dropped these columns (\textbf{EDIT THESE IF CHANGES})
+
+\begin{enumerate}
+    \item[a.] \texttt{IDpol} - not a feature
+    \item[b.] \texttt{Area} - Categorical version of Density
+    \item[c.] \texttt{VehBrand} - Vehicle brand alone does not indicate risk of policy since a singular brand has many models of vehicle, some of which might attract more risky drivers, however we believe that the risk evens out along the whole lineup of cars from a brand, well in this case group of brands.
+    \item[d.] \texttt{Region} - Another indicator of Density. 
+\end{enumerate}
+
+So after dropping these we are left with our feature columns: \texttt{VehPower}, \texttt{VehAge}, \texttt{DrivAge}, \texttt{BonusMalus}, \texttt{VehGas}, \texttt{Density}\\
+and the columns on which we base our \texttt{Risk} calculations: \texttt{ClaimNb} and \texttt{Exposure}.
 
 \subsection{Parameters}
 which and why, maybe use itemize and make it as a list
