@@ -1,7 +1,7 @@
-The dataset that we used for this report is the French Motor Third-Part Liability (\texttt{freMTPL2freq}) dataset from the \texttt{CASdatasets} \cite[p.~71]{CASdatasets} R package.
+The dataset used in the scopes of this project is the French Motor Third-Part Liability (\texttt{freMTPL2freq}) dataset from the \texttt{CASdatasets} \cite[p.~71]{CASdatasets} R package. It contains numerical and categorical information on the insurance claims of drivers for their cars spanning multiple regions, details about the cars themselves, such as age, gas type or brand, the drivers, and even the regions where the cars are driven, which more or less impact the risk of a claim being made.
 
 \subsection{Data Format}
-See ~\autoref{tab:dataset-columns} for names and descriptions of the data columns.
+For each unique policy in our dataset, there is a number of claims made within the policy, its duration, then subsequent information on the driver and car. For a clearer overview of the set see ~\autoref{tab:dataset-columns} for the names and corresponding descriptions of the data columns.
 
 \begin{table} [h!]
     \centering
@@ -39,11 +39,20 @@ See ~\autoref{tab:dataset-columns} for names and descriptions of the data column
 \end{table}
 
 \subsection{Data Cleaning}
-For data cleaning we decided to take a conservative approach minimally modify the data. We concluded that the data did not have any obvious signs of subverting our assumptions, except for the following:
+A conservative approach was taken in the scope of data cleaning, by minimally modify the data. The material did not present any obvious signs of subverting our assumptions, except for the following:
 \begin{enumerate}
-    \item Exposure should be in range $(0, 1]$ since the data was collected over one year, so we assume that any value above one is an error, and we set it equal to the max, so 1.
-    \item We removed any data points where $VehAge>30$ as this is the cutoff at which Vehicles become classified as historic cars, and are treated differently.
+    \item Exposure values should lie in the range between 0 and 1; since the data was collected over the span of one year, we assume that any value above 1 is a mistake in the collection and therefore any value over this range will be reduced to 1, the maximum value permitted.
+    \item Any data points where $VehAge>30$ are excluded. This is the cut-off mark at which vehicles become classified as historic cars and will in turn be treated differently by car insurance companies.
 \end{enumerate}
+Despite the rest of the data not presenting any faults, the information left is narrowed down to solely the figures utilized by the models. Namely, the following columns have been dropped: (\textbf{EDIT THESE IF CHANGES})
+
+\begin{enumerate}
+    \item[a.] \texttt{IDpol} - not a feature
+    \item[b.] \texttt{Area} - categorical counterpart of \texttt{Density}
+    \item[c.] \texttt{VehBrand} - Vehicle brand alone does not indicate risk of policy since a singular brand has many models of vehicle, some of which might attract more risky drivers, however we believe that the risk evens out along the whole lineup of cars from a brand, well in this case group of brands.
+    \item[d.] \texttt{Region} - Another indicator of Density. 
+\end{enumerate}
+
 
 \subsection{Visualization}
 \begin{figure} [h]
