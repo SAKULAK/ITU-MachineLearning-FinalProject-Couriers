@@ -1,4 +1,4 @@
-A Feed-Forward Neural Network (\textit{FFNN}) is our second custom implemented regression method. In this section we will explain the basics of how a FFNN works along with how we implemented these methods.
+A Feed-Forward Neural Network (\textit{FFNN}) is our second custom implemented regression method. In this section we explain the basics of how a FFNN works along with how an implemention might look.
 
 \subsection{The Structure}
 A FFNN is a collection of nodes organized in layers. First, the input layer. The input layer number of nodes is equal to the number of features in the dataset. Second, the hidden layers. There can be an arbitrary number of hidden layers and of nodes per hidden layer. Generally, the more hidden layers or nodes per layer the more complex the Neural Network becomes, which makes it more prone to overfitting and more computationally heavy to train and run predictions on. Lastly, the output layer. The number of nodes in the output layer depends on the task, but for regression there is just one node, which give the value predicted value for the data points. 
@@ -10,7 +10,7 @@ A FFNN is a collection of nodes organized in layers. First, the input layer. The
  \end{figure}
 
 \subsection{The Flow}
-A FFNN at its core follows a very simple flow, see ~\autoref{fig:FFNN-flowchart}
+A FFNN at its core follows a very simple flow, see ~\autoref{fig:FFNN-flowchart}, for each iteration or epoch data is run through the network to gain initial predictions, a cost function is calculated, weights are updated based on their partial derivate of the cost function.
 
  \begin{figure} [h]
     \centering
@@ -31,11 +31,43 @@ $$
 Then they are passed through the activation function to become the activation of the current layer, which are then passed to the next layer.
 \subsubsection{Activation Functions}
 There are many activation functions that one might choose depending on the task. Usually you use two different activation functions, one for the hidden layers and a different one for the output layer. For hidden layers we use the widely used activation function, the Rectified Linear Unit (\textit{ReLU}) function defined as $ReLU(x)=max(0,x)$. For the output layer of regression FFNNs a simple linear function is used $f(x) = x$
-\subsection{Back propagation}
+\subsection{Backpropagation}
+Backpropagation is the step of the training process, which allows the model to learn. By utilizing gradient descent in the cost function landscape the weights can be updated in the direction and magnitude which results in the updated weights producing a less costly prediction. However, to be able to use gradient descent we need the partial derivatives of the cost function relative to each weight. This can be done fully symbolically, which for large networks is infeasible, but because of the chain rule, this can be simplified into a recursive process in which the derivative of the cost function relative to the weights of the output layer ($j$) is computed:
+$$
+\frac{\partial C}{\partial w_{ij}} = 
+\frac{\partial z_j}{\partial w_{ij}} (\frac{\partial C}{\partial z_j})= 
+\frac{\partial z_j}{\partial w_{ij}}  (\frac{\partial a_j}{\partial z_j} \frac{\partial C}{\partial a_j}) =
+$$
+$$
+a_i (\Phi'(z_j) C'(a_j))
+$$
+The error term of the partial derivate for output layer for $\Phi = f(z_j)=z_j$ and $C=MSE=(y_{pred}-y_{true})^2/n$ is:
+$$
+\frac{\partial C}{\partial z_j} = (1\frac{2(a-y_{true})}{n})
+$$
+Then the effects of the weighted sum of the previous layer, in this case the last hidden layer ($i$), on the cost function is calculated:
+$$
+\frac{\partial C}{\partial w_{ui}} =
+\frac{\partial z_i}{\partial w_{ui}} [\frac{\partial C}{\partial z_i}] = 
+\frac{\partial z_i}{\partial w_{ui}} [\frac{\partial a_i}{\partial z_i} \frac{\partial z_j}{\partial a_i} (\frac{\partial C}{\partial z_j})] =
+$$
+$$
+a_u [\Phi'(z_i) w_{ij} (\frac{\partial C}{\partial z_j})]
+$$
+where $\Phi = ReLU$ then $\Phi'=1\{z \geq 0\}$.\\
+This holds true for any layer going backwards from the output layer. Its partial derivative has same terms, only depending on its own parameters and the error term of the next layer ($\frac{\partial C}{\partial z_j}$).\\
+The same derivation is done for the bias term, however to maintain its correct dimensions the contributions of each data point for a singular bias term are averaged and $\frac{\partial C}{\partial b_{i}} =
+\frac{\partial z_i}{\partial b_{i}} [\text{error term}] = 1[\text{error term}]$.
+
 
 \subsection{Updating Parameters}
 
 \subsection{Non-Essential Features}
+For better flexibility and performance of the model regularization, early stopping and mini-batch gradient descent is implemented.
 \subsubsection{Early Stopping}
+The training data is randomly split into a training and a validation set with the size of the validation set being 10\% of the initial data.\\
+After each epoch the cost is calculated on the validation set, if the cost increases for $n$ consecutive epochs training is aborted and weights are set to be the weights from the best performing epoch. This helps to optimize for performance while allowing for lower training time.
 \subsubsection{Mini-Batch Gradient Descent}
+Not sure if we should leave this in.
 \subsubsection{Weight Decay}
+
