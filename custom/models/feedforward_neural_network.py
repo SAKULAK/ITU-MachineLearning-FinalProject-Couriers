@@ -304,8 +304,7 @@ class FeedForwardNeuralNetwork():
         }
         return method_to_count[self.method]
             
-    def _createParameterArray(self, n: tuple, mean: float, std: float) -> np.ndarray:
-        n_in = n[0]
+    def _createParameterArray(self, n: tuple, mean: float, n_in: int) -> np.ndarray:
         return np.random.normal(mean, np.sqrt(2/n_in), size=n) # to help with overflows
 
     def _forwardPass(self, x: np.ndarray) -> tuple[list[np.ndarray], list[np.ndarray]]:
@@ -534,8 +533,8 @@ class FeedForwardNeuralNetwork():
         if self.verbose:
             print("Initializing parameters...")
         for _ in range(15): # get good starting parameters
-            self.layer_weights: list[np.ndarray] = [self._createParameterArray((self.size_of_layers[i], self.size_of_layers[i+1]), 0, 1) for i in range(0, self.n_layers-1)]
-            self.layer_biases: list[np.ndarray] = [self._createParameterArray((1, self.size_of_layers[i+1]), 0, 1) for i in range(0, self.n_layers-1)]
+            self.layer_weights: list[np.ndarray] = [self._createParameterArray((self.size_of_layers[i], self.size_of_layers[i+1]), 0, self.size_of_layers[i]) for i in range(0, self.n_layers-1)]
+            self.layer_biases: list[np.ndarray] = [self._createParameterArray((1, self.size_of_layers[i+1]), 0, self.size_of_layers[i]) for i in range(0, self.n_layers-1)]
 
             loss = self.error_func(y, self._forwardPass(x)[1][-1])
             if self.verbose:
