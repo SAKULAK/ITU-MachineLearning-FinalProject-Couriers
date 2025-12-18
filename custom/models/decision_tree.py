@@ -1,4 +1,5 @@
 import numpy as np
+from ..util.general import check_input
 import heapq
 
 
@@ -25,6 +26,8 @@ class DecisionTree:
         self.criterion = criterion
         
     def fit(self, X, y):
+        X = check_input(X)
+        y = check_input(y)
         self._total_n = len(y)
         if self.criterion == 'gini': self.criterion = self._gini_impurity
         if self.criterion == 'entropy': self.criterion = self._entropy 
@@ -166,6 +169,7 @@ class DecisionTree:
 
 
     def predict(self, new_data):
+        new_data = check_input(new_data)
         if not self.is_fitted: raise RuntimeError("This DecisionTree instance is not fitted yet. Call 'fit' first.")
         data_size = len(new_data) 
         results = np.zeros(data_size)

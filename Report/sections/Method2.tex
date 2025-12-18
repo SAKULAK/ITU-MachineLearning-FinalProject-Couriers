@@ -34,9 +34,9 @@ There are many activation functions that one might choose depending on the task.
 \subsection{Backpropagation}
 Backpropagation is the step of the training process, which allows the model to learn. By utilizing gradient descent in the cost function landscape the weights can be updated in the direction and magnitude which results in the updated weights producing a less costly prediction. However, to be able to use gradient descent we need the partial derivatives of the cost function relative to each weight. This can be done fully symbolically, which for large networks is infeasible, but because of the chain rule, this can be simplified into a recursive process in which the derivative of the cost function relative to the weights of the output layer ($j$) is computed:
 $$
-\frac{\partial C}{\partial w_{ij}} = 
-\frac{\partial z_j}{\partial w_{ij}} (\frac{\partial C}{\partial z_j})= 
-\frac{\partial z_j}{\partial w_{ij}}  (\frac{\partial a_j}{\partial z_j} \frac{\partial C}{\partial a_j}) =
+\frac{\partial C}{\partial W_{ij}} = 
+\frac{\partial z_j}{\partial W_{ij}} (\frac{\partial C}{\partial z_j})= 
+\frac{\partial z_j}{\partial W_{ij}}  (\frac{\partial a_j}{\partial z_j} \frac{\partial C}{\partial a_j}) =
 $$
 $$
 a_i (\Phi'(z_j) C'(a_j))
@@ -47,27 +47,48 @@ $$
 $$
 Then the effects of the weighted sum of the previous layer, in this case the last hidden layer ($i$), on the cost function is calculated:
 $$
-\frac{\partial C}{\partial w_{ui}} =
-\frac{\partial z_i}{\partial w_{ui}} [\frac{\partial C}{\partial z_i}] = 
-\frac{\partial z_i}{\partial w_{ui}} [\frac{\partial a_i}{\partial z_i} \frac{\partial z_j}{\partial a_i} (\frac{\partial C}{\partial z_j})] =
+\frac{\partial C}{\partial W_{ui}} =
+\frac{\partial z_i}{\partial W_{ui}} [\frac{\partial C}{\partial z_i}] = 
+\frac{\partial z_i}{\partial W_{ui}} [\frac{\partial a_i}{\partial z_i} \frac{\partial z_j}{\partial a_i} (\frac{\partial C}{\partial z_j})] =
 $$
 $$
-a_u [\Phi'(z_i) w_{ij} (\frac{\partial C}{\partial z_j})]
+a_u [\Phi'(z_i) W_{ij} (\frac{\partial C}{\partial z_j})]
 $$
 where $\Phi = ReLU$ then $\Phi'=1\{z \geq 0\}$.\\
 This holds true for any layer going backwards from the output layer. Its partial derivative has same terms, only depending on its own parameters and the error term of the next layer ($\frac{\partial C}{\partial z_j}$).\\
 The same derivation is done for the bias term, however to maintain its correct dimensions the contributions of each data point for a singular bias term are averaged and $\frac{\partial C}{\partial b_{i}} =
 \frac{\partial z_i}{\partial b_{i}} [\text{error term}] = 1[\text{error term}]$.
-
-
 \subsection{Updating Parameters}
+Updating parameters means taking a step in the parameter space in the direction of the weight gradient. Naively this can be done as $W_{t+1} = W_{t} - \alpha \nabla C(W_{t})$, similarly $b_{t+1} = b_{t} - \alpha \nabla C(b_{t})$, $t$ being epoch number $\alpha$ learning rate, however this presents multiple issues, primarily using a constant $\alpha$ can cause exploding gradients, inability to reach the minima, and slow learning. For faster and more precise learning the Adaptive Moment Estimation (Adam) \cite{kingma2017adammethodstochasticoptimization} method was implemented.\\
+Adam expands on Momentum \cite{polyak1964some,rumelhart1986learning} and RMSprop \cite{tieleman2012rmsprop}. It utilizes two exponentially weighed moving averages ($m_t$ and $v_t$) of the weight gradients to dynamically control the magnitude of learning rates for each weight. The first momentum mainly controls the direction of movement:
+$$
+m_{t} = \beta_1 m_{t-1} + (1-\beta_1) \nabla C(W_i)
+$$
+$\beta_1$ usually set to $0.9$, which means the current magnitude is composed of $90\%$ of the previous momentum and only $10\%$ the current gradient. 
+$$
+v_{t} = \beta_2 v_{t-1} + (1-\beta_2) \nabla C(W_i)
+$$
+$\beta_2$ is usually set to $0.999$. Since $m_0$ and $v_0$ are initialized as $0$, then during early training they are small for which we account by bias adjusting:
+$$
+\hat{m_t} = \frac{\hat{m_{t-1}}}{1-\beta_1^t}, \hat{v_t} = \frac{\hat{v_{t-1}}}{1-\beta_2^t}
+$$
+for small $t$ small denominator boosts momenta signals, while during late training the denominator being close to one barely has any effect on the momenta leaving the work to the moving averages. Then finally update parameters:
+$$
+W_{t+1} = W_t - \alpha \frac{\hat{m_t}}{\sqrt{\hat{v_t}+\epsilon}}\nabla C(W_i)
+$$
+The term $\frac{\hat{m_t}}{\sqrt{\hat{v_t}+\epsilon}}$ is effectively a scaling factor for the learning rate, adjusting it to be smaller when the variability in the cost function landscape is high and making it larger when the wanted change in direction is large. But by using the moving averages the descent is smooth without unnecessarily straying from the right path.
 
 \subsection{Non-Essential Features}
-For better flexibility and performance of the model regularization, early stopping and mini-batch gradient descent is implemented.
+For better flexibility and performance of the model regularization and early stopping were implemented.
+
 \subsubsection{Early Stopping}
 The training data is randomly split into a training and a validation set with the size of the validation set being 10\% of the initial data.\\
 After each epoch the cost is calculated on the validation set, if the cost increases for $n$ consecutive epochs training is aborted and weights are set to be the weights from the best performing epoch. This helps to optimize for performance while allowing for lower training time.
-\subsubsection{Mini-Batch Gradient Descent}
-Not sure if we should leave this in.
+
 \subsubsection{Weight Decay}
+Decoupled weight decay was implemented for the Adam optimizer by adding an $L_2$ norm regularization term to the parameter update step:
+$$
+W_{t+1} = W_t - \alpha (\frac{\hat{m_t}}{\sqrt{\hat{v_t}+\epsilon}}\nabla C(W_i) + \lambda \Vert W_t \Vert^2)
+$$
+By adding the regularization penalty, large weights are pushed to be smaller forcing a smoother decision boundary, which is less capable of overfitting to noise and more likely to capture the underlying function.
 

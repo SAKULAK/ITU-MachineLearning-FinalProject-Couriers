@@ -4,7 +4,7 @@ import numpy as np
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler, QuantileTransformer
 
-def load_and_process_data(filepath: str, get_dummies: bool, scaler: Literal["standard", "quantile"] | None) -> tuple[pd.DataFrame, pd.Series, list[str], list[str]]:
+def load_and_process_data(filepath: str, get_dummies: bool, scaler: Literal["standard", "quantile"] | None, return_full_df: bool = False) -> tuple[pd.DataFrame, pd.Series, list[str], list[str]] | pd.DataFrame:
 
     scalar_mapping: dict[str, object] = {
         "standard": StandardScaler(),
@@ -44,7 +44,8 @@ def load_and_process_data(filepath: str, get_dummies: bool, scaler: Literal["sta
         X = pd.get_dummies(X, columns=categorical_columns)
 
     y = df['Risk']
-    
+    if return_full_df:
+        return pd.concat([df[["ClaimNb", "Exposure"]], y, X], axis=1)
     if get_dummies:
         return X, y, numeric_columns, df.columns[len(numeric_columns):].tolist()
     else:
