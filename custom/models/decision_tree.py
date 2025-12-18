@@ -59,7 +59,7 @@ class DecisionTree:
         n_features = X.shape[1]
 
         parent_impurity = self.criterion(instances)
-        best_decrease = -np.inf
+        best_decrease = -1.0
         best_feature = None
         best_threshold =None
         best_left = None
@@ -92,9 +92,10 @@ class DecisionTree:
 
                 left_imp = self.criterion(left)
                 right_imp = self.criterion(right)
-                total_n = self._total_n
 
-                decrease = (n_samples/total_n) * (parent_impurity - (len(left) / n_samples) * left_imp- (len(right) / n_samples) * right_imp)
+                weighted_child_impurity = (len(left) / n_samples) * left_imp + (len(right) / n_samples) * right_imp
+                node_weight = n_samples / self._total_n
+                decrease = node_weight * (parent_impurity - weighted_child_impurity)
 
                 if (decrease > best_decrease or
                 (decrease == best_decrease and feature < best_feature) or
@@ -164,7 +165,6 @@ class DecisionTree:
             if not heap: break
 
 
-
     def predict(self, new_data):
         if not self.is_fitted: raise RuntimeError("This DecisionTree instance is not fitted yet. Call 'fit' first.")
         data_size = len(new_data) 
@@ -223,21 +223,18 @@ class DecisionTree:
 
         labels = self._labels[instances]
         _, counts = np.unique(labels, return_counts=True)
-        p = counts / counts.sum()
-
-        gini = 1.0 - np.sum(p ** 2)
-        return gini * len(instances)
+        p = counts / len(instances)
+        return 1.0 - np.sum(p ** 2)
 
     def _entropy(self, instances: np.array) -> float:
         if len(instances) == 0: return 0.0
 
         labels = self._labels[instances]
         _, counts = np.unique(labels, return_counts=True)
-        p = counts / counts.sum()
+        p = counts / len(instances)
         p = p[p > 0]
 
-        entropy = -np.sum(p * np.log2(p))
-        return entropy * len(instances)
+        return -np.sum(p * np.log2(p))
         
     def _mse(self, instances):
         if len(instances) == 0: return 0.0
