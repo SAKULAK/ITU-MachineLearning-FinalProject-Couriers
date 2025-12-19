@@ -1,1 +1,22 @@
-Idk let's see what we do
+For method three a method combining classification and regression ensembles of Gradinet Boosting, Random Forest, and a Feed Forward Neural Network was chosen. Classification is used to separarate the data into two groups \texttt{No Risk} and \texttt{Some Risk}. The datapoints of predicted class are then run throgh the regression models to predict the continous \texttt{Risk}. The logic used for splitting into these categories is that a policy with zero claims is effecively risk-free, with a sure way of profit.
+
+\subsection{Structure}
+The gap in the \texttt{Risk} metric is used to separate the datapoints into two clasess 0 (\texttt{No Risk}) and 1 (\texttt{Some Risk}), since all datapoints with $Risk < gapValue$ have $ClaimNb = 0$ and all datapoints $Risk > gapValue$ have $ClaimNb > 0$. For our smoothing factor we pick $gapValue = 0.5$. The classification models are trained on the whole dataset, while the regression models are only trained on datapoints of class 1. For prediction the unseen datapoints are passed through the classification layer first then the datapoints of predicted class 1 are passed through the regression layer. Then the final predicted \texttt{Risk} is zero for class 0 and regression prediction value for class 1.
+
+\begin{figure} [h!]
+    \centering
+    \caption{Flowchart of the ensemble method combining.}
+    \label{fig:flowchart-ensemble}
+\end{figure}
+
+\subsection{Making Ensembles}
+To combine the models we use the \texttt{StackingClassifier} from sklearn with Logistic Regression as the meta model, with the model predicitons as the meta features. Similarily, for regression the \texttt{StackingRegressor} is used with a Ridge Regressor as the meta model. 
+
+\subsection{Gradient Boosting}
+Gradient boostin is used because it is well suited for complex non-linear decision boudnaries, because of the nature of practically zooming in on feature spcae in areas where the previous trees got its predictionwrong allows it to carve around clusters effectively. However, it also has the disadvantage of baing sensitive to outliers or noise.
+
+\subsection{Random Forest}
+A Random Forest in contrast to Gradient Boosting is efficient at creating flat decision boundaries which is used to offset the high variance nature of Gradient Boosting creating a solid base for predictions.
+
+\subsection{Feed Forward Neural Network}
+A Feed Forward Neural Network \textit{FFNN} was then chosen to act as an entirely different view of the problem. A FFNN relies on capturing feature interaction patterns to make its prediciton. The features all mix and blend as they propagate through the layers which contrasts nicely with the strict feature space splttiing of tree based methods. In addition, it creates a smooth decsion boundary that may also be able to better capture the differences in the feature space for the datapoints.
