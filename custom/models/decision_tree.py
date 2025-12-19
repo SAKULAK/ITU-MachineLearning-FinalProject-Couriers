@@ -28,7 +28,9 @@ class DecisionTree:
     def fit(self, X, y):
         X = check_input(X)
         y = check_input(y)
-        self._total_n = len(y)
+        self._data = X
+        self._labels = y
+        self._total_n = len(self._labels)
         if self.criterion == 'gini': self.criterion = self._gini_impurity
         if self.criterion == 'entropy': self.criterion = self._entropy 
         self.is_fitted = False
@@ -42,8 +44,6 @@ class DecisionTree:
         if not self._is_regression:
             self.classes_ = np.unique(y)
 
-        self._data = X
-        self._labels = y
         #arange to get all the ids of the data for the root node
         self._root = self._make_leaf(np.arange(len(self._data)))
         if self.max_leaves is None:
@@ -121,8 +121,7 @@ class DecisionTree:
 
     
     def _recursive_split(self,node, depth):
-        if not self._can_split(node, depth):
-            return
+        if not self._can_split(node, depth): return
         best_split = self._find_best_split(node)
         _, feature, threshold, left, right = best_split if best_split is not None else (None, None, None, None, None)
         if left is None or right is None: return
@@ -132,17 +131,22 @@ class DecisionTree:
 
 
     def _make_heap_element(self, node, index, depth):
-        impurity_decrease, feature, threshold, left, right = self._find_best_split(node)
-        if impurity_decrease is None: return None
+        split = self._find_best_split(node)
+        if split is None: return None
+        impurity_decrease, feature, threshold, left, right = split
 
         # (priority-impurit_decrease, index, depth, node, feature, threshold, left, right)
         return (-impurity_decrease, index, depth, node, feature, threshold,left,right)
 
+
         
     def _closed_split(self): 
         heap = [self._make_heap_element(self._root, 0, 0)]
+        heap = [h for h in heap if h is not None]
         heapq.heapify(heap)
+
         for i in range (self.max_leaves-1):
+            if not heap: break
             heap_element = heapq.heappop(heap)
             priority, index, depth, node, feature, threshold, left, right = heap_element
             node.split(feature, threshold, self._make_leaf(left), self._make_leaf(right))
@@ -157,15 +161,10 @@ class DecisionTree:
                     #  3  4 5  6
 
             
-
-            if self._can_split(node.left, depth + 1):
-                new_left = self._make_heap_element(node.left, 2 * i + 1, depth + 1)
-                if new_left is not None: heapq.heappush(heap, new_left)
-            if self._can_split(node.right, depth + 1):
-                new_right = self._make_heap_element(node.right, 2 * i + 2, depth + 1)
-                if new_right is not None: heapq.heappush(heap, new_right )
-
-            if not heap: break
+            left_elem = self._make_heap_element(node.left, 2 * i + 1, depth + 1)
+            right_elem = self._make_heap_element(node.right, 2 * i + 2, depth + 1)
+            if left_elem: heapq.heappush(heap, left_elem)
+            if right_elem: heapq.heappush(heap, right_elem)
 
 
     def predict(self, new_data):
