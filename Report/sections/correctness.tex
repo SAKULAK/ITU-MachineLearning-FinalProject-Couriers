@@ -4,7 +4,7 @@ To validate our implementation of the Decision Tree (\textit{DT}) and the Feed-F
 Using an insurance dataset \cite{lantz2013machine,choi_2018_medical} with categorical features \texttt{sex, smoker, region} and numeric variables \texttt{age, bmi, children} with target variable \texttt{charges} the DT and FFNN models were compared to a null model predicting the mean of the target variable. All models were evaluated using $MSE$ and all our model configurations beat the null model.
 
 \subsection{Simple Function Test}
-A sin funciton: $f(x)=sin(x) + N(0,0.5)$ and a linear function with bias: $f(x)=1 + 2x + N(0,0.5)$ were used to compare our DT and FFNN implementations to an established implementation from the Scikit Learn \cite{JMLR:v12:pedregosa11a} (\textit{sklearn}) Python package. All hyperparameters were set to be the same arbitrary values. Our FFNN implementation performed closely to the sklearn implementation, while our DT performed exactly the same.~\autoref{fig:correctness-simple-funcs-contous-example}~\autoref{fig:correctness-simple-funcs-cat}
+A sine funciton: $f(x)=sin(x) + N(0,0.5)$ and a linear function with bias: $f(x)=1 + 2x + N(0,0.5)$ were used to compare our DT and FFNN implementations to an established implementation from the Scikit Learn \cite{JMLR:v12:pedregosa11a} (\textit{sklearn}) Python package. All hyperparameters were set to be the same arbitrary values. Our FFNN implementation performed closely to the sklearn implementation, while our DT performed exactly the same.~\autoref{fig:correctness-simple-funcs-contous-example}~\autoref{fig:correctness-simple-funcs-cat}
 
 \begin{figure} [h!]
     \centering

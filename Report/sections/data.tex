@@ -47,10 +47,10 @@ A conservative approach was taken in the scope of data cleaning, by minimally mo
 Despite the rest of the data not presenting any faults, the information left is narrowed down to solely the figures utilized by the models. Namely, the following columns have been dropped: (\textbf{EDIT THESE IF CHANGES})
 
 \begin{enumerate}
-    \item[a.] \texttt{IDpol} - not a feature
-    \item[b.] \texttt{Area} - categorical counterpart of \texttt{Density}
-    \item[c.] \texttt{VehBrand} - Vehicle brand alone does not indicate risk of policy since a singular brand has many models of vehicle, some of which might attract more risky drivers, however we believe that the risk evens out along the whole lineup of cars from a brand, well in this case group of brands.
-    \item[d.] \texttt{Region} - Another indicator of Density. 
+    \item[a.] \texttt{IDpol} - as it is not a feature
+    \item[b.] \texttt{Area} - categorical counterpart of \texttt{Density}, therefore not needed
+    \item[c.] \texttt{VehBrand} - Vehicle brand alone is not an indicator of policy risk, especially since a singular brand has many models of vehicle, potentially attracting different driver types, however, we assume that the risk evens out along the whole brand's lineup of cars.
+    \item[d.] \texttt{Region} - another indicator of \texttt{Density}. 
 \end{enumerate}
 
 
