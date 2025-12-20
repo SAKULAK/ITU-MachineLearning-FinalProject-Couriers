@@ -2,18 +2,19 @@ A decision tree is essentially a flowchart for making predictions. It works by s
 Once the tree is built every leaf node is assigned a value used to predict the target variable of new, unseen data.\\
 For Regression: The leaf is assigned the Average (Mean) of the values in the leaf.\\
 For Classification: The leaf is assigned the Majority Class. In other words the class that is most common in the leaf. This decision is made utilizing certain principles for tie-breaking.\\
+The project, in essence, revolves around a regression problem, that of predicting the policy risk of new customers, hence why the classification method couldn't hold for our scope.
 
 
 \subsection{Structure}
-The structure of this project's Decision Tree implementation follows a classic object oriented design. It is constructed with nodes witch function as either:\\
-leaf - which holds the prediction\\
-decision node - which holds the splitting rule (the feature and threshold) as well as pointers to it's left and right children.\\
-\\
+The structure of this project's Decision Tree implementation follows a classic object oriented design. It is constructed with nodes which function as either:\\
+\begin{itemize}
+\item Leaf - which holds the final prediction.\\
+\item Decision node - which holds the splitting rule (the feature and threshold) as well as pointers to it's left and right children. It represents every group leading up to the leaf; it's children which stand for the smaller subgroups of the current one.\\
+\end{itemize}
 The DecisionTree class manages the logic of how the tree is built and how it makes decisions. It stores the final structure made of nodes, which is similar to a binary tree, where each node points to either nothing or it's two children nodes.\\
-The DecisionTree is structured in a way that allows it to function as both classifier and regressor based on the values of the observed variables.
 
 \subsection{Finding Splits}
-The most important part of constructing a decision tree is finding a split. This is the most computationally heavy part. The Decision Tree:
+The most important part of the construction of a decision tree is finding a split. This is the most computationally heavy part. The Decision Tree:
 \begin{enumerate}
     \item[1.] Loops through every feature
     \item[2.] Sorts the data by feature
