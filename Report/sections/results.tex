@@ -1,1 +1,120 @@
-Probably some table of results of each method and how and why we evaluated like we did.
+% Random Forest
+\newcommand{\rfMaxDepth}{\textbf{FILL IN}}
+\newcommand{\rfMaxFeatures}{\textbf{FILL IN}}
+\newcommand{\rfMinSamplesLeaf}{\textbf{FILL IN}}
+\newcommand{\rfMinSamplesSplit}{\textbf{FILL IN}}
+\newcommand{\rfEstimators}{\textbf{FILL IN}}
+
+% Gradient Boosting
+\newcommand{\gbLearningRate}{\textbf{FILL IN}}
+\newcommand{\gbLoss}{\textbf{FILL IN}}
+\newcommand{\gbMaxDepth}{\textbf{FILL IN}}
+\newcommand{\gbMinSamplesSplit}{\textbf{FILL IN}}
+\newcommand{\gbEstimators}{\textbf{FILL IN}}
+\newcommand{\gbSubsample}{\textbf{FILL IN}}
+
+% MLP
+\newcommand{\mlpActivation}{\textbf{FILL IN}}
+\newcommand{\mlpAlpha}{\textbf{FILL IN}}
+\newcommand{\mlpHiddenLayers}{\textbf{FILL IN}}
+\newcommand{\mlpLearningRate}{\textbf{FILL IN}}
+\newcommand{\mlpSolver}{\textbf{FILL IN}}
+\newcommand{\mlpMaxIter}{\textbf{FILL IN}}
+
+% Random Forest Classifier
+\newcommand{\rfcMaxDepth}{\textbf{FILL IN}}
+\newcommand{\rfcMaxFeatures}{\textbf{FILL IN}}
+\newcommand{\rfcMinSamplesLeaf}{\textbf{FILL IN}}
+\newcommand{\rfcMinSamplesSplit}{\textbf{FILL IN}}
+\newcommand{\rfcEstimators}{\textbf{FILL IN}}
+
+% Gradient Boosting Classifier
+\newcommand{\gbcLearningRate}{\textbf{FILL IN}}
+\newcommand{\gbcLoss}{\textbf{FILL IN}}
+\newcommand{\gbcMaxDepth}{9}
+\newcommand{\gbcMinSamplesSplit}{\textbf{FILL IN}}
+\newcommand{\gbcEstimators}{\textbf{FILL IN}}
+\newcommand{\gbcSubsample}{\textbf{FILL IN}}
+
+% MLP Classifier
+\newcommand{\mlpcActivation}{\textbf{FILL IN}}
+\newcommand{\mlpcAlpha}{\textbf{FILL IN}}
+\newcommand{\mlpcHiddenLayers}{\textbf{FILL IN}}
+\newcommand{\mlpcLearningRate}{\textbf{FILL IN}}
+\newcommand{\mlpcSolver}{\textbf{FILL IN}}
+\newcommand{\mlpcMaxIter}{\textbf{FILL IN}}
+
+% Decision Tree
+\newcommand{\dtMaxDepth}{\textbf{FILL IN}}
+\newcommand{\dtMinSamplesLeaf}{\textbf{FILL IN}}
+\newcommand{\dtMinSamplesSplit}{\textbf{FILL IN}}
+\newcommand{\dtMinImpurityDecrease}{\textbf{FILL IN}}
+
+% Feed Forward Neural Network
+\newcommand{\ffnnAlpha}{\textbf{FILL IN}}
+\newcommand{\ffnnHiddenLayers}{\textbf{FILL IN}}
+\newcommand{\ffnnLearningRate}{\textbf{FILL IN}}
+\newcommand{\ffnnEpochs}{\textbf{FILL IN}}
+
+% Results Total
+\newcommand{\mseDT}{\textbf{FILL IN}}
+\newcommand{\mseFFNN}{\textbf{FILL IN}}
+\newcommand{\mseEnsembleTotal}{\textbf{FILL IN}}
+
+% Results Ensemble Parts
+\newcommand{\precClass}{\textbf{FILL IN}}
+\newcommand{\mseReg}{\textbf{FILL IN}}
+
+
+\subsection{Procedure}
+Before any work being done the dataset was split into two datasets a Training and a Testing set. Any development training was done on the testing set, while the final performance results were taken using the testing set.\\
+After the development of M1 and M2 was done and M3 was decidedd a Random Grid Search with cross validation was performed using sklearn \texttt{RandomizedSerachCV} to find a set of hyperparameters around which an ordinary Grid Search was performed to pinpoint the best parameters.
+\subsubsection{Training}
+Training was performed on a more balanced dataset, using both undersampling of the datapoints with low Risk and oversampling the higher Risk data points.
+\begin{figure}
+    \centering
+    \caption{Distribution of Risk on the final training dataset.}
+    \label{fig:distribution-balanced-dataset}
+\end{figure}
+\subsubsection{Evaluation}
+Models were evaluated using MSE as this is the standard to comparing base model performance for regression. The classification portion of the ensemble method was valuated using Precision as we want to make sure that our regression models get as little zero Risk cases since they were not trained on them.
+
+\subsection{Final Results}
+The final models were initialized with these commands:
+\begin{enumerate}
+    \item[] \texttt{DecisionTree(max\_depth = \dtMaxDepth, min\_impurity\_decrease = \dtMinImpurityDecrease, min\_samples\_leaf = \dtMinSamplesLeaf, min\_samples\_split = \dtMinSamplesSplit)}
+    \item[] \texttt{FeedForwardNeuralNetwork(hidden\_layer\_sizes = \ffnnHiddenLayers, learning\_rate = \ffnnLearningRate, epochs = \ffnnEpochs,\dtMinSamplesLeaf, reguralization\_term = (2, \ffnnAlpha))}
+    \item[] \texttt{RandomForestRegressor(n\_estimators = \rfEstimators, max\_depth = \rfMaxDepth, max\_features = \rfMaxFeatures, min\_samples\_leaf = \rfMinSamplesLeaf)}
+    \item[] \texttt{GradientBoostingRegressor(n\_estimators = \gbEstimators, learning\_rate = \gbLearningRate, max\_depth = \gbMaxDepth, loss = '\gbLoss', subsample = \gbSubsample)}
+    \item[] \texttt{MLPRegressor(hidden\_layer\_sizes = \mlpHiddenLayers, activation = '\mlpActivation', solver = '\mlpSolver', alpha = \mlpAlpha, learning\_rate\_init = \mlpLearningRate, max\_iter = \mlpMaxIter)}
+    \item[] \texttt{RandomForestClassifier(n\_estimators = \rfcEstimators, max\_depth = \rfcMaxDepth, min\_samples\_split = \rfcMinSamplesSplit)}
+    \item[] \texttt{GradientBoostingClassifier(n\_estimators = \gbEstimators, learning\_rate = \gbLearningRate, max\_depth = \gbMaxDepth, loss = '\gbLoss', subsample = \gbSubsample)}
+    \item[] \texttt{MLPClassifier(hidden\_layer\_sizes = \mlpcHiddenLayers, activation = '\mlpcActivation', solver = '\mlpcSolver', alpha = \mlpcAlpha, learning\_rate\_init = \mlpcLearningRate, max\_iter = \mlpcMaxIter)}
+\end{enumerate}
+\begin{table}[h]
+    \centering
+    \caption{Overall Results}
+    \begin{tabular}{lr}
+        \toprule
+        \textbf{Method} & \textbf{MSE} \\
+        \midrule
+        DT       & \mseDT \\
+        FFNN     & \mseFFNN \\
+        Ensemble & \mseEnsembleTotal \\
+        \bottomrule
+    \end{tabular}
+    \label{tab:results-overall}
+\end{table}
+\begin{table}[h]
+    \centering
+    \caption{Ensemble Component Breakdown}
+    \begin{tabular}{lcc}
+        \toprule
+        \textbf{Ensemble} & \textbf{Precision} & \textbf{MSE} \\
+        \midrule
+        Classification Part & \precClass &           \\
+        Regression Part     &            & \mseReg   \\
+        \bottomrule
+    \end{tabular}
+    \label{tab:results-enesemble}
+\end{table}
