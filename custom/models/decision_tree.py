@@ -1,4 +1,5 @@
 import numpy as np
+from ..util.general import check_input
 import heapq
 
 
@@ -25,6 +26,11 @@ class DecisionTree:
         self.criterion = criterion
         
     def fit(self, X, y):
+        X = check_input(X)
+        y = check_input(y)
+        self._data = X
+        self._labels = y
+        self._total_n = len(self._labels)
         if self.criterion == 'gini': self.criterion = self._gini_impurity
         if self.criterion == 'entropy': self.criterion = self._entropy 
         self.is_fitted = False
@@ -38,8 +44,6 @@ class DecisionTree:
         if not self._is_regression:
             self.classes_ = np.unique(y)
 
-        self._data = X
-        self._labels = y
         #arange to get all the ids of the data for the root node
         self._root = self._make_leaf(np.arange(len(self._data)))
         if self.max_leaves is None:
@@ -54,12 +58,11 @@ class DecisionTree:
         instances = node.instances
         X = self._data
         y = self._labels
-        total = len(y)
         n_samples = len(instances)
         n_features = X.shape[1]
 
         parent_impurity = self.criterion(instances)
-        best_decrease = -np.inf
+        best_decrease = -1.0
         best_feature = None
         best_threshold =None
         best_left = None
@@ -68,7 +71,7 @@ class DecisionTree:
         if isinstance(self.min_samples_leaf, float):
             if not (0 < self.min_samples_leaf <= 1):
                 raise ValueError("min_samples_leaf as float must be in (0, 1]")
-            min_leaf = int(np.ceil(self.min_samples_leaf * total))
+            min_leaf = int(np.ceil(self.min_samples_leaf * n_samples))
 
         else:
             min_leaf = self.min_samples_leaf
@@ -90,15 +93,12 @@ class DecisionTree:
                 #midpoint at the start
                 threshold = (X_sorted[i] + X_sorted[i - 1]) / 2.0
 
-                n_left = i
-                n_right = n_samples - i
-
                 left_imp = self.criterion(left)
                 right_imp = self.criterion(right)
 
-                weighted = (n_left / n_samples) * left_imp + (n_right / n_samples) * right_imp
-
-                decrease = parent_impurity - weighted
+                weighted_child_impurity = (len(left) / n_samples) * left_imp + (len(right) / n_samples) * right_imp
+                node_weight = n_samples / self._total_n
+                decrease = node_weight * (parent_impurity - weighted_child_impurity)
 
                 if (decrease > best_decrease or
                 (decrease == best_decrease and feature < best_feature) or
@@ -110,15 +110,18 @@ class DecisionTree:
                     best_left = left
                     best_right = right
 
-                if best_feature is None or best_decrease <= self.min_impurity_decrease: return None
+        if best_feature is None:
+            return None
 
+        if best_decrease < self.min_impurity_decrease:
+            return None
+        
         return best_decrease, best_feature, best_threshold, best_left, best_right
     
 
     
     def _recursive_split(self,node, depth):
-        if not self._can_split(node, depth):
-            return
+        if not self._can_split(node, depth): return
         best_split = self._find_best_split(node)
         _, feature, threshold, left, right = best_split if best_split is not None else (None, None, None, None, None)
         if left is None or right is None: return
@@ -128,17 +131,22 @@ class DecisionTree:
 
 
     def _make_heap_element(self, node, index, depth):
-        impurity_decrease, feature, threshold, left, right = self._find_best_split(node)
-        if impurity_decrease is None: return None
+        split = self._find_best_split(node)
+        if split is None: return None
+        impurity_decrease, feature, threshold, left, right = split
 
         # (priority-impurit_decrease, index, depth, node, feature, threshold, left, right)
         return (-impurity_decrease, index, depth, node, feature, threshold,left,right)
 
+
         
     def _closed_split(self): 
         heap = [self._make_heap_element(self._root, 0, 0)]
+        heap = [h for h in heap if h is not None]
         heapq.heapify(heap)
+
         for i in range (self.max_leaves-1):
+            if not heap: break
             heap_element = heapq.heappop(heap)
             priority, index, depth, node, feature, threshold, left, right = heap_element
             node.split(feature, threshold, self._make_leaf(left), self._make_leaf(right))
@@ -153,17 +161,14 @@ class DecisionTree:
                     #  3  4 5  6
 
             
-
-            if self._can_split(node.left, depth + 1):
-                heapq.heappush(heap, self._make_heap_element(node.left, 2 * i + 1, depth + 1))
-            if self._can_split(node.right, depth + 1):
-                heapq.heappush(heap, self._make_heap_element(node.right, 2 * i + 2, depth + 1))
-
-            if not heap: break
-
+            left_elem = self._make_heap_element(node.left, 2 * i + 1, depth + 1)
+            right_elem = self._make_heap_element(node.right, 2 * i + 2, depth + 1)
+            if left_elem: heapq.heappush(heap, left_elem)
+            if right_elem: heapq.heappush(heap, right_elem)
 
 
     def predict(self, new_data):
+        new_data = check_input(new_data)
         if not self.is_fitted: raise RuntimeError("This DecisionTree instance is not fitted yet. Call 'fit' first.")
         data_size = len(new_data) 
         results = np.zeros(data_size)
@@ -182,6 +187,7 @@ class DecisionTree:
     def _can_split(self, node, depth):
         reached_max_depth = self.max_depth is None or depth < self.max_depth 
         reached_min_split = len(node.instances) >= self.min_to_split
+        if self._is_regression: return reached_max_depth and reached_min_split
         #Check if the node contains more than one unique lable. Do NOT split if all the labels are equal to the majority class.
         not_a_single_lable = len(np.unique(self._labels[node.instances])) > 1 
         return reached_max_depth and reached_min_split and not_a_single_lable
@@ -215,21 +221,26 @@ class DecisionTree:
             setattr(self, key, value)
         return self
 
-    def _gini_impurity(self, lables_ids: np.array) -> float:
-        if lables_ids.size == 0: return 0.0
-        _, counts = np.unique(self._labels[lables_ids], return_counts=True)
-        p = counts / counts.sum()
-        return 1.0-sum(p**2)
+    def _gini_impurity(self, instances: np.array) -> float:
+        if len(instances) == 0: return 0.0
 
-    def _entropy(self, lables_ids: np.array) -> float:
-        if lables_ids.size == 0: return 0.0
-        _, counts = np.unique(self._labels[lables_ids], return_counts=True)
-        p = counts / counts.sum()
+        labels = self._labels[instances]
+        _, counts = np.unique(labels, return_counts=True)
+        p = counts / len(instances)
+        return 1.0 - np.sum(p ** 2)
+
+    def _entropy(self, instances: np.array) -> float:
+        if len(instances) == 0: return 0.0
+
+        labels = self._labels[instances]
+        _, counts = np.unique(labels, return_counts=True)
+        p = counts / len(instances)
         p = p[p > 0]
-        return -1*(np.sum(p*np.log2(p)))
-    
-    def _mse(self, label_ids: np.ndarray) -> float:
-        if label_ids.size == 0: return 0.0
-        y = self._labels[label_ids]
+
+        return -np.sum(p * np.log2(p))
+        
+    def _mse(self, instances):
+        if len(instances) == 0: return 0.0
+        y = self._labels[instances]
         mean = np.mean(y)
         return np.mean((y - mean) ** 2)

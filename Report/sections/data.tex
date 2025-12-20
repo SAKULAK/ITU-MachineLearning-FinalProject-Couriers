@@ -44,15 +44,6 @@ A conservative approach was taken in the scope of data cleaning, by minimally mo
     \item Exposure values should lie in the range between 0 and 1; since the data was collected over the span of one year, we assume that any value above 1 is a mistake in the collection and therefore any value over this range will be reduced to 1, the maximum value permitted.
     \item Any data points where $VehAge>30$ are excluded. This is the cut-off mark at which vehicles become classified as historic cars and will in turn be treated differently by car insurance companies.
 \end{enumerate}
-Despite the rest of the data not presenting any faults, the information left is narrowed down to solely the figures utilized by the models. Namely, the following columns have been dropped: (\textbf{EDIT THESE IF CHANGES})
-
-\begin{enumerate}
-    \item[a.] \texttt{IDpol} - not a feature
-    \item[b.] \texttt{Area} - categorical counterpart of \texttt{Density}
-    \item[c.] \texttt{VehBrand} - Vehicle brand alone does not indicate risk of policy since a singular brand has many models of vehicle, some of which might attract more risky drivers, however we believe that the risk evens out along the whole lineup of cars from a brand, well in this case group of brands.
-    \item[d.] \texttt{Region} - Another indicator of Density. 
-\end{enumerate}
-
 
 \subsection{Visualization}
 As seen in~\autoref{fig:distribution-risk} the dataset is heavily biased towards 0 claims. This can pose a significant issue by cluttering the feature space with noise, especially if the differences in feature values for data points with higher numbers of claims and the data points with 0 number of claims are small.

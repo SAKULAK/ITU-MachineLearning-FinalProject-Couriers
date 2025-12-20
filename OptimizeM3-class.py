@@ -1,12 +1,12 @@
 from custom.util.data_manipulation import load_and_process_data
 from sklearn.model_selection import train_test_split
-from sklearn.ensemble import StackingRegressor
-from sklearn.ensemble import GradientBoostingRegressor, RandomForestRegressor
-from sklearn.neural_network import MLPRegressor
+from sklearn.ensemble import StackingClassifier  # Changed
+from sklearn.ensemble import GradientBoostingClassifier, RandomForestClassifier  # Changed
+from sklearn.neural_network import MLPClassifier  # Changed
 from sklearn.model_selection import GridSearchCV, RandomizedSearchCV
 from sklearn.preprocessing import StandardScaler
 from sklearn.pipeline import Pipeline
-from sklearn.linear_model import Ridge
+from sklearn.linear_model import LogisticRegression  # Changed from Ridge
 from scipy.stats import randint, uniform, loguniform
 import numpy as np
 import gc
@@ -30,11 +30,12 @@ df_subset.sort_index(inplace=True)
 df_subset.reset_index(inplace=True, drop=True)
 subset_X = df_subset.loc[:, numeric_columns + categorical_columns]
 subset_y = df_subset["Risk"]
+subset_y = (subset_y > 0.5).astype(int)
 
 X_train, X_test, y_train, y_test = train_test_split(subset_X, subset_y, test_size=0.2, random_state=random_state)
 
 try:
-    with open("best_random_hyperparameters.json", "r") as f:
+    with open("best_random_hyperparameters_classification.json", "r") as f:
         best_params_dict = json.load(f)
     print("Loaded existing best random hyperparameters.")
 except FileNotFoundError:
@@ -67,7 +68,7 @@ if best_params_dict is None:
         'max_depth': randint(3, 10),
         'subsample': uniform(0.5, 0.5),
         'min_samples_split': randint(2, 20),
-        'loss': ['squared_error', 'huber']
+        'loss': ['log_loss', 'exponential']  # Changed for classification
     }
     mlp_dist = {
         'mlp__hidden_layer_sizes': [
@@ -81,13 +82,13 @@ if best_params_dict is None:
 
     print("Tuning Random Forest...")
     rs_rf = RandomizedSearchCV(
-        RandomForestRegressor(random_state = random_state),
+        RandomForestClassifier(random_state = random_state), # Changed
         param_distributions=rf_dist,
         n_iter=N_ITER,
         cv=5,
         verbose=verbosity,
         n_jobs=-1,
-        scoring='neg_mean_squared_error',
+        scoring='accuracy', # Changed
         random_state = random_state
     )
     rs_rf.fit(X_train, y_train)
@@ -96,13 +97,13 @@ if best_params_dict is None:
 
     print("Tuning Gradient Boosting...")
     rs_gb = RandomizedSearchCV(
-        GradientBoostingRegressor(random_state = random_state),
+        GradientBoostingClassifier(random_state = random_state), # Changed
         param_distributions=gb_dist,
         n_iter=N_ITER,
         cv=5,
         verbose=verbosity,
         n_jobs=-1,
-        scoring='neg_mean_squared_error',
+        scoring='accuracy', # Changed
         random_state = random_state
     )
     rs_gb.fit(X_train, y_train)
@@ -112,7 +113,7 @@ if best_params_dict is None:
     print("Tuning MLP (Pipeline)...")
     mlp_pipe = Pipeline([
         ('scaler', StandardScaler()),
-        ('mlp', MLPRegressor(random_state = random_state, max_iter=1500))
+        ('mlp', MLPClassifier(random_state = random_state, max_iter=1500)) # Changed
     ])
 
     rs_mlp = RandomizedSearchCV(
@@ -122,7 +123,7 @@ if best_params_dict is None:
         cv=5,
         verbose=verbosity,
         n_jobs=-1,
-        scoring='neg_mean_squared_error',
+        scoring='accuracy', # Changed
         random_state = random_state
     )
     rs_mlp.fit(X_train, y_train)
@@ -135,7 +136,7 @@ if best_params_dict is None:
         "MLP": rs_mlp.best_params_
     }
 
-    filename = "best_random_hyperparameters.json"
+    filename = "best_random_hyperparameters_classification.json"
 
     with open(filename, "w") as f:
         json.dump(best_params_dict, f, cls=NumpyEncoder, indent=4)
@@ -186,17 +187,17 @@ print("New GB Grid:", fine_grid_gb)
 print("New MLP Grid:", fine_grid_mlp)
 
 print("Running Fine-Tuning GridSearch for RF...")
-gs_rf = GridSearchCV(RandomForestRegressor(random_state = random_state), fine_grid_rf, cv=3, n_jobs=-1, verbose=verbosity)
+gs_rf = GridSearchCV(RandomForestClassifier(random_state = random_state), fine_grid_rf, cv=3, n_jobs=-1, verbose=verbosity, scoring='accuracy')
 gs_rf.fit(X_train, y_train)
 print("Best RF Params after Fine-Tuning:", gs_rf.best_params_)
 
 print("Running Fine-Tuning GridSearch for GB...")
-gs_gb = GridSearchCV(GradientBoostingRegressor(random_state = random_state), fine_grid_gb, cv=3, n_jobs=-1, verbose=verbosity)
+gs_gb = GridSearchCV(GradientBoostingClassifier(random_state = random_state), fine_grid_gb, cv=3, n_jobs=-1, verbose=verbosity, scoring='accuracy')
 gs_gb.fit(X_train, y_train)
 print("Best GB Params after Fine-Tuning:", gs_gb.best_params_)
 
 # For MLP (Pipeline)
-gs_mlp = GridSearchCV(mlp_pipe, fine_grid_mlp, cv=3, n_jobs=-1, verbose=verbosity)
+gs_mlp = GridSearchCV(mlp_pipe, fine_grid_mlp, cv=3, n_jobs=-1, verbose=verbosity, scoring='accuracy')
 gs_mlp.fit(X_train, y_train)
 print("Best MLP Params after Fine-Tuning:", gs_mlp.best_params_)
 
@@ -208,7 +209,7 @@ best_params_dict = {
     "MLP": gs_mlp.best_params_
 }
 
-filename = "best_hyperparameters.json"
+filename = "best_hyperparameters_classification.json"
 
 with open(filename, "w") as f:
     json.dump(best_params_dict, f, cls=NumpyEncoder, indent=4)
@@ -220,13 +221,13 @@ best_rf_model = gs_rf.best_estimator_
 best_gb_model = gs_gb.best_estimator_
 best_mlp_model = gs_mlp.best_estimator_
 
-stacking_model = StackingRegressor(
+stacking_model = StackingClassifier( # Changed
     estimators=[
         ('rf', best_rf_model),
         ('gb', best_gb_model),
         ('mlp', best_mlp_model)
     ],
-    final_estimator=Ridge(),
+    final_estimator=LogisticRegression(), # Changed from Ridge
     cv=5,
     n_jobs=-1,
     verbose=verbosity
@@ -234,8 +235,9 @@ stacking_model = StackingRegressor(
 
 stacking_model.fit(X_train, y_train)
 
-from sklearn.metrics import mean_squared_error
+from sklearn.metrics import accuracy_score, classification_report # Changed
 
 y_pred = stacking_model.predict(X_test)
-mse = mean_squared_error(y_test, y_pred)
-print(f"Final Ensemble Test MSE: {mse}")
+acc = accuracy_score(y_test, y_pred)
+print(f"Final Ensemble Test Accuracy: {acc}")
+print(classification_report(y_test, y_pred))

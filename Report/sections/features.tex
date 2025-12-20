@@ -1,10 +1,16 @@
-
-So after dropping these we are left with our feature columns: \texttt{VehPower}, \texttt{VehAge}, \texttt{DrivAge}, \texttt{BonusMalus}, \texttt{VehGas}, \texttt{Density}\\
-and the columns on which we base our \texttt{Risk} calculations: \texttt{ClaimNb} and \texttt{Exposure}.
+All data columns were used as features for the preddictions with \texttt{BonusMalus}, \texttt{Density}, \texttt{DrivAge}, and \texttt{VehAge} were treated as continous numeric featuress with the rest treated as categorical and one-hot encoded. The columns on which \texttt{Risk} calculations are based are \texttt{ClaimNb} and \texttt{Exposure}, therefore not included in the feature set.
 
 \subsection{Claims Risk}
-How do we calculate it, why (idk)\\
-Very imbalanced~\autoref{fig:distribution-risk}
+Claims Risk were computedd using the Bayesian Credibility using the Bühlmann Linear Approximation \cite{Bühlmann_1969,buhlmann1970glaubwurdigkeit} with the assumption that data points with low exposesure lacked credibility to say that the driver is more risky at a certain claims per exposure ratio, since luck can be big factor in a driver getting into an accident within one day, however over a longer period of time it is assumed that the driver has enogh time to show their true risk.
+The credibility factor was calculated as such:
+$$
+Z_i = \frac{Exposure_i}{Exposure_i+K}
+$$
+Where $K = 0.12$ meaning that at expoure 0.12, $\sim1.5$ months, we assign that data point a credibility of 0.5. Then we calculate the risk as:
+$$
+Risk_i = Z_i \frac{ClaimNb_i}{Exposure_i} + (1-Z_i)\frac{\sum ClaimNb_j}{\sum Exposure_j}
+$$
+So for data points with low credibility the average claim to exposure ratio dominates the risk calculation and oppositely data points with high credibility are primarely assigned their claim to exposure ratio, while the data points in the middle are mixed depending on their credibility. However, because of the number of claims being heavily biased toward zero the risk score is also very imbalanced~\autoref{fig:distribution-risk}
 
 \begin{figure} [h]
     \centering
@@ -12,9 +18,20 @@ Very imbalanced~\autoref{fig:distribution-risk}
     \label{fig:distribution-risk}
 \end{figure}
 
+%%%%%%%%%%%%%%%%%%%%%%section%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{PCA \& Clustering}
+Clustering is defined as an unsupervised learning method, which groups the observations made based on similarity, with the goal of identifying homogeneous subgroups of insurance policy claimers; telling also by the name.
+
+For better clustering, the dimensions of the feature space should be reduced, which is why the method called PCA was introduced in this project. P(rincipal) C(omponent) A(nalysis) is a technique of dimensionality reduction which aims to turn the correlated numerical variables into a smaller set of uncorrelated ones. Where, before, the numerical features of \texttt{DrivAge}, \texttt{BonusMalus} or \texttt{Density} could be correlated, after applying the PCA, the data's high dimensionality will be stabilized and any multi-collinearity will be reduced, as the resulting set should be smaller, uncorrelated.
+Further data cleaning ensued for the specific requirements of PCA, such as excluding the categorical variables and standardizing the data to prevent the dominion of large scaled values over the analysis.
+Four principal components need to be used to retain 89\% of the data; which means that without significant loss most of the original information is represented in a lower dimensional space. As such, global structure is preserved and variance is recognized in fewer dimensions.
+
 \begin{figure} [h]
     \centering
     \caption{PCA with Risk as color | Clustering on PCA data.}
     \label{fig:PCA-Risk-and-Clustering}
 \end{figure}
+
+The clustering is the following step and from various methods, we applied K-Means clustering on our data, as it's finely compatible with continuous, scaled data, resulting from the principal component analysis. The main idea behind this clustering method is the partitioning of the data into \texttt{k} clusters, \texttt{k} being the number of such groups created, through minimizing the variance between different clusters.
+To find the right value for \texttt{k}, a silhouette score was used as an evaluation metric when trying different values. This score primarily measures similarity of each observation to their own cluster and the quality of the separation between clusters, after which the best one is chosen. The \texttt{k} which maximized the number of the silhouette score, is the one that is chosen for the final \texttt{k} split.
+In summary of the vein of clustering, meaningful behavior and risk patterns will be displayed together, letting the visualization speak for different groups of the insurance customers.
