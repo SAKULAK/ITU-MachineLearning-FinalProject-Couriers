@@ -1,0 +1,47 @@
+{
+    "sizes_of_hidden_layers": [
+        50,
+        50,
+        50
+    ],
+    "epochs": 50,
+    "learning_rate": 0.003545953948388475,
+    "random_state": null,
+    "verbose": false,
+    "optimizer": "adam",
+    "regularization_setting": [
+        2,
+        0.004000293638887158
+    ],
+    "batch_size": 0,
+    "patience": 50,
+    "regression": false,
+    "auto_save": [
+        true,
+        "ffnn_autosave",
+        true
+    ],
+    "hidden_activation_func": null,
+    "output_activation_func": null,
+    "is_fitted_": false,
+    "_estimator_type": "classifier",
+    "save_auto": true,
+    "save_prefix": "ffnn_autosave",
+    "delete_temp_after_success": true,
+    "hidden_activation_name": "relu",
+    "hidden_activation_args": [
+        0
+    ],
+    "output_activation_name": "softmax",
+    "n_layers": 5,
+    "method": "Multiclass Classification",
+    "size_of_layers": [
+        64,
+        50,
+        50,
+        50,
+        1
+    ],
+    "start_time": 1766346195.3083072,
+    "current_epoch": 0
+}
