@@ -1,22 +1,24 @@
-All data columns were used as features for the preddictions with \texttt{BonusMalus}, \texttt{Density}, \texttt{DrivAge}, and \texttt{VehAge} were treated as continous numeric featuress with the rest treated as categorical and one-hot encoded. The columns on which \texttt{Risk} calculations are based are \texttt{ClaimNb} and \texttt{Exposure}, therefore not included in the feature set.
+All data columns were used as features for the predictions with \texttt{BonusMalus}, \texttt{Density}, \texttt{DrivAge}, and \texttt{VehAge} were treated as continuous numeric features, while the rest were treated as categorical and one-hot encoded. The columns on which \texttt{Risk} calculations are based on, are \texttt{ClaimNb} and \texttt{Exposure}, therefore, not included in the feature set.
 
 \subsection{Claims Risk}
-Claims Risk were computedd using the Bayesian Credibility using the Bühlmann Linear Approximation \cite{Bühlmann_1969,buhlmann1970glaubwurdigkeit} with the assumption that data points with low exposesure lacked credibility to say that the driver is more risky at a certain claims per exposure ratio, since luck can be big factor in a driver getting into an accident within one day, however over a longer period of time it is assumed that the driver has enogh time to show their true risk.
+Claims Risk were computed with the Bayesian Credibility using the Bühlmann Linear Approximation \cite{Bühlmann_1969,buhlmann1970glaubwurdigkeit} under the assumption, that data points with low exposure lacked credibility. This is to say that the driver is more risky at a certain claims per exposure ratio, since luck can be big factor in a driver getting into an accident within one day. On the other hand, over a longer period of time it is assumed that the driver has enough time to show their true risk.
 The credibility factor was calculated as such:
 $$
 Z_i = \frac{Exposure_i}{Exposure_i+K}
 $$
-Where $K = 0.12$ meaning that at expoure 0.12, $\sim1.5$ months, we assign that data point a credibility of 0.5. Then we calculate the risk as:
+Where $K = 0.12$, meaning that at expoure 0.12, $\sim1.5$ months, we assign that data point a credibility of 0.5. Then we calculate the risk as:
 $$
 Risk_i = Z_i \frac{ClaimNb_i}{Exposure_i} + (1-Z_i)\frac{\sum ClaimNb_j}{\sum Exposure_j}
 $$
-So for data points with low credibility the average claim to exposure ratio dominates the risk calculation and oppositely data points with high credibility are primarely assigned their claim to exposure ratio, while the data points in the middle are mixed depending on their credibility. However, because of the number of claims being heavily biased toward zero the risk score is also very imbalanced~\autoref{fig:distribution-risk}
+As such, for data points with low credibility the average claim-to-exposure ratio dominates the risk calculation and oppositely data points with high credibility are primarily assigned their claim to exposure ratio, while the data points in the middle are mixed depending on their credibility. However, because of the number of claims being heavily biased toward zero, the risk score is also very imbalanced~\autoref{fig:distribution-risk}
 
 \begin{figure} [h]
     \centering
     \caption{Histogram of Risk values}
+    \includegraphics[width=1\linewidth]{risk_score_distribution.pdf}
     \label{fig:distribution-risk}
 \end{figure}
+
 
 %%%%%%%%%%%%%%%%%%%%%%section%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{PCA \& Clustering}
@@ -28,6 +30,7 @@ Four principal components need to be used to retain 89\% of the data; which mean
 
 \begin{figure} [h]
     \centering
+    {}
     \caption{PCA with Risk as color | Clustering on PCA data.}
     \label{fig:PCA-Risk-and-Clustering}
 \end{figure}
