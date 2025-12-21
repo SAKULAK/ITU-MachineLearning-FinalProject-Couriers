@@ -3,7 +3,7 @@ from typing import Callable, Self, Literal, Any
 from sklearn.exceptions import NotFittedError
 import numpy as np
 import pandas as pd
-from ..util.general import check_input
+from util import check_input
 from pydantic import validate_call
 import time
 import json
