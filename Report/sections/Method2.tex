@@ -5,18 +5,14 @@ A FFNN is a collection of nodes organized in layers. First, the input layer. The
 
 \begin{figure} [h]
     \centering
+    \includegraphics[width=1\linewidth]{FFNN-structure.png}
     \caption{Structure of a FFNN}
+    \cite{rathi2018neuralnet}
     \label{fig:FFNN-structure}
  \end{figure}
 
 \subsection{The Flow}
-A FFNN at its core follows a very simple flow, see ~\autoref{fig:FFNN-flowchart}, for each iteration or epoch data is run through the network to gain initial predictions, a cost function is calculated, weights are updated based on their partial derivate of the cost function.
-
- \begin{figure} [h]
-    \centering
-    \caption{Flowchart of a FFNN}
-    \label{fig:FFNN-flowchart}
- \end{figure}
+A FFNN at its core follows a very simple flow, for each iteration or epoch data is run through the network to gain initial predictions, a cost function is calculated, weights are updated based on their partial derivate of the cost function. This is repeated until either the model raches the max epochs or it stops improving.
 
 \subsection{Initialization}
 We initialize an array of weights ($W_{ij}$) and an array of biases ($b_j$) for each pair of subsequent layers. The shape of $W_ij$ is the number of nodes in the previous layer ($i$) by the number of nodes in the current layer ($j$) which is also the shape of the bias array.\\
