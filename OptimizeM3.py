@@ -12,7 +12,7 @@ import numpy as np
 import gc
 import json
 
-N_ITER = 25
+N_ITER = 40
 verbosity = 3
 random_state = None
 
@@ -84,7 +84,7 @@ if best_params_dict is None:
         RandomForestRegressor(random_state = random_state),
         param_distributions=rf_dist,
         n_iter=N_ITER,
-        cv=5,
+        cv=2,
         verbose=verbosity,
         n_jobs=-1,
         scoring='neg_mean_squared_error',
@@ -99,7 +99,7 @@ if best_params_dict is None:
         GradientBoostingRegressor(random_state = random_state),
         param_distributions=gb_dist,
         n_iter=N_ITER,
-        cv=5,
+        cv=2,
         verbose=verbosity,
         n_jobs=-1,
         scoring='neg_mean_squared_error',
@@ -119,7 +119,7 @@ if best_params_dict is None:
         mlp_pipe,
         param_distributions=mlp_dist,
         n_iter=N_ITER,
-        cv=5,
+        cv=2,
         verbose=verbosity,
         n_jobs=-1,
         scoring='neg_mean_squared_error',
@@ -227,7 +227,7 @@ stacking_model = StackingRegressor(
         ('mlp', best_mlp_model)
     ],
     final_estimator=Ridge(),
-    cv=5,
+    cv=2,
     n_jobs=-1,
     verbose=verbosity
 )
