@@ -1,0 +1,29 @@
+{
+    "RandomForest": {
+        "max_depth": 36,
+        "max_features": 1.0,
+        "min_samples_leaf": 3,
+        "min_samples_split": 3,
+        "n_estimators": 992
+    },
+    "GradientBoosting": {
+        "learning_rate": 0.042107254452635044,
+        "loss": "squared_error",
+        "max_depth": 9,
+        "min_samples_split": 19,
+        "n_estimators": 875,
+        "subsample": 0.7314348551602284
+    },
+    "MLP": {
+        "mlp__activation": "relu",
+        "mlp__alpha": 0.03126246722316616,
+        "mlp__hidden_layer_sizes": [
+            300,
+            200,
+            100,
+            50
+        ],
+        "mlp__learning_rate_init": 0.0007347770274138385,
+        "mlp__solver": "adam"
+    }
+}

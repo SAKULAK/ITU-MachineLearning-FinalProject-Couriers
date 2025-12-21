@@ -73,8 +73,8 @@ if best_params_dict is None:
         'mlp__hidden_layer_sizes': [
             (50,), (100,), (50, 50), (100, 50), (100, 100), (200, 100), (200, 200, 100, 50), (300, 200, 100, 50), (50, 50, 50), (10, 10, 10)
         ],
-        'mlp__activation': ['relu', 'tanh'],
-        'mlp__solver': ['adam', 'lbfgs'],
+        'mlp__activation': ['relu'],
+        'mlp__solver': ['adam'],
         'mlp__alpha': loguniform(1e-5, 1e-1),
         'mlp__learning_rate_init': loguniform(1e-4, 1e-1)
     }
@@ -186,17 +186,17 @@ print("New GB Grid:", fine_grid_gb)
 print("New MLP Grid:", fine_grid_mlp)
 
 print("Running Fine-Tuning GridSearch for RF...")
-gs_rf = GridSearchCV(RandomForestRegressor(random_state = random_state), fine_grid_rf, cv=3, n_jobs=-1, verbose=verbosity)
+gs_rf = GridSearchCV(RandomForestRegressor(random_state = random_state), fine_grid_rf, cv=2, n_jobs=-1, verbose=verbosity)
 gs_rf.fit(X_train, y_train)
 print("Best RF Params after Fine-Tuning:", gs_rf.best_params_)
 
 print("Running Fine-Tuning GridSearch for GB...")
-gs_gb = GridSearchCV(GradientBoostingRegressor(random_state = random_state), fine_grid_gb, cv=3, n_jobs=-1, verbose=verbosity)
+gs_gb = GridSearchCV(GradientBoostingRegressor(random_state = random_state), fine_grid_gb, cv=2, n_jobs=-1, verbose=verbosity)
 gs_gb.fit(X_train, y_train)
 print("Best GB Params after Fine-Tuning:", gs_gb.best_params_)
 
 # For MLP (Pipeline)
-gs_mlp = GridSearchCV(mlp_pipe, fine_grid_mlp, cv=3, n_jobs=-1, verbose=verbosity)
+gs_mlp = GridSearchCV(mlp_pipe, fine_grid_mlp, cv=2, n_jobs=-1, verbose=verbosity)
 gs_mlp.fit(X_train, y_train)
 print("Best MLP Params after Fine-Tuning:", gs_mlp.best_params_)
 

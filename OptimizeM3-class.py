@@ -34,6 +34,7 @@ subset_y = (subset_y > 0.5).astype(int)
 
 X_train, X_test, y_train, y_test = train_test_split(subset_X, subset_y, test_size=0.2, random_state=random_state)
 
+print("Starting Hyperparameter Optimization for Classification Models...")
 try:
     with open("best_random_hyperparameters_classification.json", "r") as f:
         best_params_dict = json.load(f)
@@ -85,7 +86,7 @@ if best_params_dict is None:
         RandomForestClassifier(random_state = random_state), # Changed
         param_distributions=rf_dist,
         n_iter=N_ITER,
-        cv=5,
+        cv=2,
         verbose=verbosity,
         n_jobs=-1,
         scoring='accuracy', # Changed
@@ -100,7 +101,7 @@ if best_params_dict is None:
         GradientBoostingClassifier(random_state = random_state), # Changed
         param_distributions=gb_dist,
         n_iter=N_ITER,
-        cv=5,
+        cv=2,
         verbose=verbosity,
         n_jobs=-1,
         scoring='accuracy', # Changed
@@ -120,7 +121,7 @@ if best_params_dict is None:
         mlp_pipe,
         param_distributions=mlp_dist,
         n_iter=N_ITER,
-        cv=5,
+        cv=2,
         verbose=verbosity,
         n_jobs=-1,
         scoring='accuracy', # Changed
@@ -187,17 +188,17 @@ print("New GB Grid:", fine_grid_gb)
 print("New MLP Grid:", fine_grid_mlp)
 
 print("Running Fine-Tuning GridSearch for RF...")
-gs_rf = GridSearchCV(RandomForestClassifier(random_state = random_state), fine_grid_rf, cv=3, n_jobs=-1, verbose=verbosity, scoring='accuracy')
+gs_rf = GridSearchCV(RandomForestClassifier(random_state = random_state), fine_grid_rf, cv=2, n_jobs=-1, verbose=verbosity, scoring='accuracy')
 gs_rf.fit(X_train, y_train)
 print("Best RF Params after Fine-Tuning:", gs_rf.best_params_)
 
 print("Running Fine-Tuning GridSearch for GB...")
-gs_gb = GridSearchCV(GradientBoostingClassifier(random_state = random_state), fine_grid_gb, cv=3, n_jobs=-1, verbose=verbosity, scoring='accuracy')
+gs_gb = GridSearchCV(GradientBoostingClassifier(random_state = random_state), fine_grid_gb, cv=2, n_jobs=-1, verbose=verbosity, scoring='accuracy')
 gs_gb.fit(X_train, y_train)
 print("Best GB Params after Fine-Tuning:", gs_gb.best_params_)
 
 # For MLP (Pipeline)
-gs_mlp = GridSearchCV(mlp_pipe, fine_grid_mlp, cv=3, n_jobs=-1, verbose=verbosity, scoring='accuracy')
+gs_mlp = GridSearchCV(mlp_pipe, fine_grid_mlp, cv=2, n_jobs=-1, verbose=verbosity, scoring='accuracy')
 gs_mlp.fit(X_train, y_train)
 print("Best MLP Params after Fine-Tuning:", gs_mlp.best_params_)
 
@@ -228,7 +229,7 @@ stacking_model = StackingClassifier( # Changed
         ('mlp', best_mlp_model)
     ],
     final_estimator=LogisticRegression(), # Changed from Ridge
-    cv=5,
+    cv=2,
     n_jobs=-1,
     verbose=verbosity
 )

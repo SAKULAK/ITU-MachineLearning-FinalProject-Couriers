@@ -59,7 +59,11 @@ def fit_ensemble_model(X: pd.DataFrame | np.ndarray, y: pd.Series | np.ndarray, 
         raise ValueError("At least one of base_regrssion_models or base_classification_models must be provided.")
     
     if base_regrssion_models and base_classification_models:
+        if verbose:
+            print("Fitting regression ensembles...")
         reg_ensemble = StackingRegressor(estimators=base_regrssion_models, final_estimator=Ridge(alpha=1.0), n_jobs=-1, verbose=verbose).fit(X[y > classification_threshold], y[y > classification_threshold])
+        if verbose:
+            print("Fitting classification ensembles...")
         class_ensemble = StackingClassifier(estimators=base_classification_models, final_estimator=LogisticRegression(max_iter=1000), n_jobs=-1, verbose=verbose).fit(X, y_binary)
         return reg_ensemble, class_ensemble
     if base_regrssion_models:

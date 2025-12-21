@@ -46,7 +46,7 @@ def pca_clustering_analysis(plot: tuple[bool, str] = (True, "Report/figs/"), ver
     labels_list = list()
 
     
-    for k in range(2, 21):
+    for k in range(2, 13):
         if verbose:
             print(f"Clustering with k={k}...")
             verbosity = 3
