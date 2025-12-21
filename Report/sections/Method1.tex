@@ -8,23 +8,64 @@ The project, in essence, revolves around a regression problem, that of predictin
 \subsection{Structure}
 The structure of this project's Decision Tree implementation follows a classic object oriented design. It is constructed with nodes which function as either:\\
 \begin{itemize}
+\setlength{\parskip}{0pt}
+
 \item Leaf - which holds the final prediction.\\
 \item Decision node - which holds the splitting rule (the feature and threshold) as well as pointers to it's left and right children. It represents every group leading up to the leaf; it's children which stand for the smaller subgroups of the current one.\\
 \end{itemize}
 The DecisionTree class manages the logic of how the tree is built and how it makes decisions. It stores the final structure made of nodes, which is similar to a binary tree, where each node points to either nothing or it's two children nodes.\\
 
 \subsection{Finding Splits}
-The most important part of the construction of a decision tree is finding a split. This is the most computationally heavy part. The Decision Tree:
+The most important part of the construction of a decision tree is finding a split. This is also the most computationally heavy part as the Decision Tree takes following steps:
 \begin{enumerate}
-    \item[1.] Loops through every feature
+\setlength{\parskip}{0pt}
+
+    \item[1.] Loops through every feature given
     \item[2.] Sorts the data by feature
     \item[3.] Tests every possible midpoint between values as a potential "threshold."
     \item[4.] Calculates the Impurity Decrease for each using the selected criterion. It remembers the one that reduced the disorder the most.
 \end{enumerate}
+For the regression tree mean squared error had been chosen as the function measuring the quality of the split, which is equal to variance reduction 
+$$
+\mathrm{MSE} = \frac{1}{n} \sum_{i=1}^{n} \left(y_i - \hat{y}_i\right)^2
+$$
+For a single node (leaf) in a regression tree, where the prediction is the mean of the target values in that node:
+$$
+\mathrm{MSE}_{\text{node}} = \frac{1}{|R|} \sum_{i \in R} \left(y_i - \bar{y}_R\right)^2
+$$
+\begin{description}
+\setlength{\itemsep}{0pt}
+\setlength{\parskip}{0pt}
+  \item[$R$] Set of samples in the node
+  \item[$|R|$] Number of samples in the node
+  \item[$\bar{y}_R$] Node's prediction, defined as
+  \[
+    \bar{y}_R = \frac{1}{|R|} \sum_{i \in R} y_i
+  \]
+\end{description}
+
+The best split is chosen using the weighted best decrease in impurity using this formula:\\\\
+$\Delta I = \frac{n}{N} \left( I(R) - \left( \frac{|R_L|}{n} I(R_L) + \frac{|R_R|}{n} I(R_R) \right) \right)
+\quad$\\\\
+Where:
+\begin{description}
+\setlength{\itemsep}{0pt}
+\setlength{\parskip}{0pt}
+  \item[$R$] Parent node (set of samples before the split)
+  \item[$R_L$] Left child node
+  \item[$R_R$] Right child node
+  \item[$n = |R|$] Number of samples in the parent node
+  \item[$N$] Total number of samples in the dataset
+  \item[$I(\cdot)$] Impurity function ( MSE for regression, Gini or entropy for classification)
+  \item[$\Delta I$] Decrease in impurity due to the split
+\end{description}
+
+
+
 Depending on the parameters the tree is built from this in one of two ways.
 \subsubsection{Recursive}
 The standard way of building a tree. The algorithm starts at the Root. It splits the Root into a Left and Right child. It then moves to the Left child and tries to split it. If it can, it moves into that child's Left child and repeats the process.\\
-As consequences of that It dives as deep as possible into the leftmost branch until it hits a stopping condition. Only then does it backtrack to fill in the right-hand side branches.
+As consequences of that it dives as deep as possible into the leftmost branch until it hits a stopping condition. Only then does it backtrack to fill in the right-hand side branches.
 \subsubsection{Priority Queue}
 This is the method used when the tree is limited by the total number of leaves. The recursive approach would not work with such limitation.
 Instead of diving deep into one branch, the algorithm looks at all current leaf nodes across the entire tree. The priority queue (heap) stores potential "Impurity Decrease" for every leaf.\\
