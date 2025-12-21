@@ -33,7 +33,7 @@ class DecisionTree:
         self._total_n = len(self._labels)
         if self.criterion == 'gini': self.criterion = self._gini_impurity
         if self.criterion == 'entropy': self.criterion = self._entropy 
-        self.is_fitted = False
+        self.is_fitted_ = False
 
         if np.issubdtype(y.dtype, np.number):
             self._is_regression = True
@@ -50,7 +50,7 @@ class DecisionTree:
             self._recursive_split(self._root, 0)
         else:
             self._closed_split()
-        self.is_fitted = True
+        self.is_fitted_ = True
         return self
 
     def _find_best_split(self, node):
@@ -169,7 +169,7 @@ class DecisionTree:
 
     def predict(self, new_data):
         new_data = check_input(new_data)
-        if not self.is_fitted: raise RuntimeError("This DecisionTree instance is not fitted yet. Call 'fit' first.")
+        if not self.is_fitted_: raise RuntimeError("This DecisionTree instance is not fitted yet. Call 'fit' first.")
         data_size = len(new_data) 
         results = np.zeros(data_size)
         for i in range(data_size):

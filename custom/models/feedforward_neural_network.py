@@ -3,7 +3,7 @@ from typing import Callable, Self, Literal, Any
 from sklearn.exceptions import NotFittedError
 import numpy as np
 import pandas as pd
-from util import check_input
+from ..util.general import check_input
 from pydantic import validate_call
 import time
 import json
@@ -27,8 +27,7 @@ def print_progress(self, i: int, max_i: int, interval: int) -> None:
             print(f"{i+1}/{max_i} epochs, Validation loss: {self.val_loss_[-1]:.6f}, Training loss {self.train_loss_[-1]:.6f}. Est. time remaining: {format_time(remaining_time):>11}",end="\r")
 
 class FeedForwardNeuralNetwork():
-    @validate_call
-    def __init__(self, sizes_of_hidden_layers: list[int], epochs: int, learning_rate: float, batch_size: int = 0, regression: bool = False, optimizer: Literal["sgd", "adam"] = "adam",
+    def __init__(self, sizes_of_hidden_layers: list[int]=[64, 32], epochs: int = 10, learning_rate: float= 0.001, batch_size: int = 0, regression: bool = False, optimizer: Literal["sgd", "adam"] = "adam",
                  hidden_activation_func: None | Literal["relu"] | tuple[Literal["parametric_relu", "elu"], float] = None, 
                  output_activation_func: None | Literal["sigmoid", "softmax", "linear"] = None, 
                  regularization_setting: None | tuple[int, float] = None, patience: int = 0,
