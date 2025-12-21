@@ -31,7 +31,7 @@ df_subset.reset_index(inplace=True, drop=True)
 subset_X = df_subset.loc[:, numeric_columns + categorical_columns]
 subset_y = df_subset["Risk"]
 
-X_train, X_test, y_train, y_test = train_test_split(subset_X, subset_y, test_size=0.2, random_state=random_state)
+X_train, X_test, y_train, y_test = train_test_split(subset_X[subset_y > 0.5], subset_y[subset_y > 0.5], test_size=0.2, random_state=random_state)
 
 try:
     with open("best_random_hyperparameters.json", "r") as f:
