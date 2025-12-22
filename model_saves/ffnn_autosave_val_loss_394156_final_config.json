@@ -1,0 +1,51 @@
+{
+    "sizes_of_hidden_layers": [
+        300,
+        200,
+        100,
+        50
+    ],
+    "epochs": 100,
+    "learning_rate": 0.022216091081589597,
+    "random_state": null,
+    "verbose": false,
+    "optimizer": "adam",
+    "regularization_setting": [
+        2,
+        0.0008512374533940289
+    ],
+    "batch_size": 0,
+    "patience": 100,
+    "regression": true,
+    "auto_save": [
+        true,
+        "ffnn_autosave",
+        true
+    ],
+    "hidden_activation_func": null,
+    "output_activation_func": null,
+    "is_fitted_": false,
+    "_estimator_type": "regressor",
+    "save_auto": true,
+    "save_prefix": "ffnn_autosave",
+    "delete_temp_after_success": true,
+    "hidden_activation_name": "relu",
+    "hidden_activation_args": [
+        0
+    ],
+    "output_activation_name": "linear",
+    "n_layers": 6,
+    "method": "Regression",
+    "size_of_layers": [
+        64,
+        300,
+        200,
+        100,
+        50,
+        1
+    ],
+    "start_time": 1766397362.7161777,
+    "current_epoch": 99,
+    "training_epochs": 100,
+    "time_taken_": 187.2826075553894
+}
