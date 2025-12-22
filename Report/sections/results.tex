@@ -1,69 +1,68 @@
 % Random Forest
-\newcommand{\rfMaxDepth}{\textbf{FILL IN}}
-\newcommand{\rfMaxFeatures}{\textbf{FILL IN}}
-\newcommand{\rfMinSamplesLeaf}{\textbf{FILL IN}}
-\newcommand{\rfMinSamplesSplit}{\textbf{FILL IN}}
-\newcommand{\rfEstimators}{\textbf{FILL IN}}
+\newcommand{\rfMaxDepth}{\textbf{42}}
+\newcommand{\rfMaxFeatures}{\textbf{0.8}}
+\newcommand{\rfMinSamplesLeaf}{\textbf{1}}
+\newcommand{\rfMinSamplesSplit}{\textbf{3}}
+\newcommand{\rfEstimators}{\textbf{437}}
 
 % Gradient Boosting
-\newcommand{\gbLearningRate}{\textbf{FILL IN}}
-\newcommand{\gbLoss}{\textbf{FILL IN}}
-\newcommand{\gbMaxDepth}{\textbf{FILL IN}}
-\newcommand{\gbMinSamplesSplit}{\textbf{FILL IN}}
-\newcommand{\gbEstimators}{\textbf{FILL IN}}
-\newcommand{\gbSubsample}{\textbf{FILL IN}}
+\newcommand{\gbLearningRate}{\textbf{0.0295}}
+\newcommand{\gbLoss}{\textbf{huber}}
+\newcommand{\gbMaxDepth}{\textbf{10}}
+\newcommand{\gbMinSamplesSplit}{\textbf{12}}
+\newcommand{\gbEstimators}{\textbf{953}}
+\newcommand{\gbSubsample}{\textbf{0.8046}}
 
 % MLP
-\newcommand{\mlpActivation}{\textbf{FILL IN}}
-\newcommand{\mlpAlpha}{\textbf{FILL IN}}
-\newcommand{\mlpHiddenLayers}{\textbf{FILL IN}}
-\newcommand{\mlpLearningRate}{\textbf{FILL IN}}
-\newcommand{\mlpSolver}{\textbf{FILL IN}}
-\newcommand{\mlpMaxIter}{\textbf{FILL IN}}
+\newcommand{\mlpActivation}{\textbf{relu}}
+\newcommand{\mlpAlpha}{\textbf{0.0431}}
+\newcommand{\mlpHiddenLayers}{\textbf{[300,200,100,50]}}
+\newcommand{\mlpLearningRate}{\textbf{0.0014}}
+\newcommand{\mlpSolver}{\textbf{adam}}
+\newcommand{\mlpMaxIter}{\textbf{2000}}
 
 % Random Forest Classifier
-\newcommand{\rfcMaxDepth}{\textbf{FILL IN}}
-\newcommand{\rfcMaxFeatures}{\textbf{FILL IN}}
-\newcommand{\rfcMinSamplesLeaf}{\textbf{FILL IN}}
-\newcommand{\rfcMinSamplesSplit}{\textbf{FILL IN}}
-\newcommand{\rfcEstimators}{\textbf{FILL IN}}
+\newcommand{\rfcMaxDepth}{\textbf{44}}
+\newcommand{\rfcMaxFeatures}{\textbf{sqrt}}
+\newcommand{\rfcMinSamplesLeaf}{\textbf{2}}
+\newcommand{\rfcMinSamplesSplit}{\textbf{3}}
+\newcommand{\rfcEstimators}{\textbf{629}}
 
 % Gradient Boosting Classifier
-\newcommand{\gbcLearningRate}{\textbf{FILL IN}}
-\newcommand{\gbcLoss}{\textbf{FILL IN}}
-\newcommand{\gbcMaxDepth}{9}
-\newcommand{\gbcMinSamplesSplit}{\textbf{FILL IN}}
-\newcommand{\gbcEstimators}{\textbf{FILL IN}}
-\newcommand{\gbcSubsample}{\textbf{FILL IN}}
+\newcommand{\gbcLearningRate}{\textbf{0.014}}
+\newcommand{\gbcLoss}{\textbf{log\_loss}}
+\newcommand{\gbcMaxDepth}{\textbf{10}}
+\newcommand{\gbcMinSamplesSplit}{\textbf{7}}
+\newcommand{\gbcEstimators}{\textbf{1034}}
+\newcommand{\gbcSubsample}{\textbf{0.8366}}
 
 % MLP Classifier
-\newcommand{\mlpcActivation}{\textbf{FILL IN}}
-\newcommand{\mlpcAlpha}{\textbf{FILL IN}}
-\newcommand{\mlpcHiddenLayers}{\textbf{FILL IN}}
-\newcommand{\mlpcLearningRate}{\textbf{FILL IN}}
-\newcommand{\mlpcSolver}{\textbf{FILL IN}}
-\newcommand{\mlpcMaxIter}{\textbf{FILL IN}}
+\newcommand{\mlpcActivation}{\textbf{relu}}
+\newcommand{\mlpcAlpha}{\textbf{0.0101}}
+\newcommand{\mlpcHiddenLayers}{\textbf{[300,200,100,50]}}
+\newcommand{\mlpcLearningRate}{\textbf{0.0094}}
+\newcommand{\mlpcSolver}{\textbf{adam}}
+\newcommand{\mlpcMaxIter}{\textbf{2000}}
 
 % Decision Tree
-\newcommand{\dtMaxDepth}{\textbf{FILL IN}}
-\newcommand{\dtMinSamplesLeaf}{\textbf{FILL IN}}
-\newcommand{\dtMinSamplesSplit}{\textbf{FILL IN}}
-\newcommand{\dtMinImpurityDecrease}{\textbf{FILL IN}}
+\newcommand{\dtMaxDepth}{\textbf{None}}
+\newcommand{\dtMaxLeaves}{\textbf{50}}
+\newcommand{\dtMinSamplesLeaf}{\textbf{5}}
+\newcommand{\dtMinSamplesSplit}{\textbf{2}}
+\newcommand{\dtMinImpurityDecrease}{\textbf{0}}
 
 % Feed Forward Neural Network
-\newcommand{\ffnnAlpha}{\textbf{FILL IN}}
-\newcommand{\ffnnHiddenLayers}{\textbf{FILL IN}}
-\newcommand{\ffnnLearningRate}{\textbf{FILL IN}}
-\newcommand{\ffnnEpochs}{\textbf{FILL IN}}
+\newcommand{\ffnnAlpha}{\textbf{0.0009}}
+\newcommand{\ffnnHiddenLayers}{\textbf{[300,200,100,50]}}
+\newcommand{\ffnnLearningRate}{\textbf{0.0222}}
+\newcommand{\ffnnEpochs}{\textbf{100}}
 
 % Results Total
 \newcommand{\mseDT}{\textbf{FILL IN}}
+\newcommand{\mseDTsklearn}{\textbf{0.2818}}
 \newcommand{\mseFFNN}{\textbf{FILL IN}}
-\newcommand{\mseEnsembleTotal}{\textbf{FILL IN}}
-
-% Results Ensemble Parts
-\newcommand{\precClass}{\textbf{FILL IN}}
-\newcommand{\mseReg}{\textbf{FILL IN}}
+\newcommand{\mseFFNNsklearn}{\textbf{0.2498}}
+\newcommand{\mseEnsembleTotal}{\textbf{0.4097}}
 
 
 \subsection{Procedure}
@@ -82,39 +81,45 @@ Models were evaluated using MSE as this is the standard procedure of comparing b
 \subsection{Final Results}
 The final models were initialized with these commands:
 \begin{enumerate}
-    \item[] \texttt{DecisionTree(max\_depth = \dtMaxDepth, min\_impurity\_decrease = \dtMinImpurityDecrease, min\_samples\_leaf = \dtMinSamplesLeaf, min\_samples\_split = \dtMinSamplesSplit)}
-    \item[] \texttt{FeedForwardNeuralNetwork(hidden\_layer\_sizes = \ffnnHiddenLayers, learning\_rate = \ffnnLearningRate, epochs = \ffnnEpochs,\dtMinSamplesLeaf, reguralization\_term = (2, \ffnnAlpha))}
-    \item[] \texttt{RandomForestRegressor(n\_estimators = \rfEstimators, max\_depth = \rfMaxDepth, max\_features = \rfMaxFeatures, min\_samples\_leaf = \rfMinSamplesLeaf)}
-    \item[] \texttt{GradientBoostingRegressor(n\_estimators = \gbEstimators, learning\_rate = \gbLearningRate, max\_depth = \gbMaxDepth, loss = '\gbLoss', subsample = \gbSubsample)}
+    \item[] \texttt{DecisionTree(max\_depth = \dtMaxDepth, max\_leaves = \dtMaxLeaves, min\_impurity\_decrease = \dtMinImpurityDecrease, min\_samples\_leaf = \dtMinSamplesLeaf, min\_samples\_split = \dtMinSamplesSplit)}
+    \item[] \texttt{FFNN(hidden\_layer\_sizes = \ffnnHiddenLayers, learning\_rate = \ffnnLearningRate, epochs = \ffnnEpochs,\dtMinSamplesLeaf, reguralization\_term = (2, \ffnnAlpha))}
+    \item[] \texttt{RandomForestReg(n\_estimators = \rfEstimators, max\_depth = \rfMaxDepth, max\_features = \rfMaxFeatures,min\_samples\_split = \rfcMinSamplesSplit, min\_samples\_leaf = \rfMinSamplesLeaf)}
+    \item[] \texttt{GradientBoostingReg(n\_estimators = \gbEstimators, learning\_rate = \gbLearningRate, max\_depth = \gbMaxDepth, min\_samples\_spllit = \gbMinSamplesSplit, loss = '\gbLoss', subsample = \gbSubsample)}
     \item[] \texttt{MLPRegressor(hidden\_layer\_sizes = \mlpHiddenLayers, activation = '\mlpActivation', solver = '\mlpSolver', alpha = \mlpAlpha, learning\_rate\_init = \mlpLearningRate, max\_iter = \mlpMaxIter)}
-    \item[] \texttt{RandomForestClassifier(n\_estimators = \rfcEstimators, max\_depth = \rfcMaxDepth, min\_samples\_split = \rfcMinSamplesSplit)}
-    \item[] \texttt{GradientBoostingClassifier(n\_estimators = \gbEstimators, learning\_rate = \gbLearningRate, max\_depth = \gbMaxDepth, loss = '\gbLoss', subsample = \gbSubsample)}
+    \item[] \texttt{RandomForestClass(n\_estimators = \rfcEstimators, max\_depth = \rfcMaxDepth, max\_features = \rfcMaxFeatures, min\_samples\_split = \rfcMinSamplesSplit, min\_samples\_leaf = \rfcMinSamplesLeaf)}
+    \item[] \texttt{GradientBoostingClass(n\_estimators = \gbcEstimators, learning\_rate = \gbcLearningRate, max\_depth = \gbcMaxDepth, min\_samples\_split = \gbcMinSamplesSplit, loss = '\gbcLoss', subsample = \gbcSubsample)}
     \item[] \texttt{MLPClassifier(hidden\_layer\_sizes = \mlpcHiddenLayers, activation = '\mlpcActivation', solver = '\mlpcSolver', alpha = \mlpcAlpha, learning\_rate\_init = \mlpcLearningRate, max\_iter = \mlpcMaxIter)}
 \end{enumerate}
 \begin{table}[h]
     \centering
     \caption{Overall Results}
-    \begin{tabular}{lr}
+    \begin{tabular}{lrr}
         \toprule
-        \textbf{Method} & \textbf{MSE} \\
+        \textbf{Method} & \textbf{MSE (our)} & \textbf{MSE (sklearn)}\\
         \midrule
-        DT       & \mseDT \\
-        FFNN     & \mseFFNN \\
+        DT      & \mseDT & \mseDTsklearn \\
+        FFNN     & \mseFFNN & \mseFFNNsklearn \\
         Ensemble & \mseEnsembleTotal \\
         \bottomrule
     \end{tabular}
     \label{tab:results-overall}
 \end{table}
-\begin{table}[h]
+As seen in~\autoref{tab:results-overall} the best average performance method overall was M1 - Decision Tree, which had almost the same MSE for our implementation and the sklearn implementation. However, the Feed Forward Neural Network has a better performance ceiling that can be reached, by either training for longer, or having better initialization luck.
+
+\subsubsection{M3 - Ensemble Classification Performance}
+\begin{table}[!h]
     \centering
-    \caption{Ensemble Component Breakdown}
-    \begin{tabular}{lcc}
+    \caption{Classification Report}
+    \begin{tabular}{lccc}
         \toprule
-        \textbf{Ensemble} & \textbf{Precision} & \textbf{MSE} \\
+        & \textbf{precision} & \textbf{recall} & \textbf{f1-score} \\
         \midrule
-        Classification Part & \precClass &           \\
-        Regression Part     &            & \mseReg   \\
+        \textbf{0}        & 0.97 & 0.67 & 0.79 \\
+        \textbf{1}        & 0.08 & 0.56 & 0.14 \\
+        \midrule
+        \textbf{accuracy} &      &      & 0.67 \\
         \bottomrule
     \end{tabular}
-    \label{tab:results-enesemble}
+    \label{tab:classification_report}
 \end{table}
+As seen in~\autoref{tab:classification_report} the classification step of the ensemble performed quite well at filtering the dataset for the regression step. It separated the 0 (\texttt{No Risk}) class with 97\% certainty, meaning that a small amount of class 1 (\texttt{Some Risk}) data points were instantly classified as \texttt{No Risk}. However, overall it did quite a poor job separating the \texttt{Some Risk} class, as almost 50\% of the data that was passed to the regression layer was of the \texttt{No Risk} class, which is impossible for the regression layer to predict correctly because of the decision to only train on datapoints of \texttt{Some Risk} class.
