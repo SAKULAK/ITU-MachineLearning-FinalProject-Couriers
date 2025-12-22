@@ -12,7 +12,7 @@ import numpy as np
 import gc
 import json
 
-N_ITER = 40
+N_ITER = 50
 verbosity = 3
 random_state = None
 
@@ -31,7 +31,10 @@ df_subset.reset_index(inplace=True, drop=True)
 subset_X = df_subset.loc[:, numeric_columns + categorical_columns]
 subset_y = df_subset["Risk"]
 
-X_train, X_test, y_train, y_test = train_test_split(subset_X[subset_y > 0.5], subset_y[subset_y > 0.5], test_size=0.2, random_state=random_state)
+X_train, X_test, y_train, y_test = train_test_split(subset_X.loc[subset_y > 0.5], subset_y[subset_y > 0.5], test_size=0.2, random_state=random_state)
+
+assert (df_subset.loc[subset_y > 0.5, "Risk"] == subset_y[subset_y > 0.5]).all()
+assert (df_subset.loc[subset_y > 0.5, "BonusMalus"] == subset_X.loc[subset_y > 0.5, "BonusMalus"]).all()
 
 try:
     with open("best_random_hyperparameters.json", "r") as f:
@@ -84,7 +87,7 @@ if best_params_dict is None:
         RandomForestRegressor(random_state = random_state),
         param_distributions=rf_dist,
         n_iter=N_ITER,
-        cv=2,
+        cv=4,
         verbose=verbosity,
         n_jobs=-1,
         scoring='neg_mean_squared_error',
