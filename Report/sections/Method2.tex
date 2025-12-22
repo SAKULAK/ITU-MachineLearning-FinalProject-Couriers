@@ -9,7 +9,7 @@ Lastly, the output layer. The number of nodes in this layer depend on the task, 
 
 \begin{figure} [h]
     \centering
-    \includegraphics[width=1\linewidth]{FFNN-structure.png}
+    \includegraphics[width=0.7\linewidth]{FFNN-structure.png}
     \caption{Structure of a FFNN}
     \cite{rathi2018neuralnet}
     \label{fig:FFNN-structure}
@@ -19,9 +19,9 @@ Lastly, the output layer. The number of nodes in this layer depend on the task, 
 A FFNN at its core follows a very simple flow, for each iteration or epoch data is run through the network to gain initial predictions, a cost function is calculated, weights are updated based on their partial derivate of the cost function. This is repeated until either the model reaches the max epochs or it stops improving.
 
 \subsection{Initialization}
-We initialize an array of weights ($W_{ij}$) and an array of biases ($b_j$) for each pair of subsequent layers. The shape of $W_ij$ is the number of nodes in the previous layer ($i$) by the number of nodes in the current layer ($j$) which is also the shape of the bias array.\\
+An array of weights is initialized ($W_{ij}$) and an array of biases ($b_j$) for each pair of subsequent layers. The shape of $W_ij$ is the number of nodes in the previous layer ($i$) by the number of nodes in the current layer ($j$) which is also the shape of the bias array.\\
 \\
-To fill the arrays with initial values we use the He Initialization \cite{he2015delvingdeeprectifierssurpassing} by drawing from a zero-mean normal distribution with standard deviation of $\sqrt{2/n_i}$ which is considered to be among the best initializations for shallow ReLU based FFNNs.
+To fill the arrays with initial values the He Initialization \cite{he2015delvingdeeprectifierssurpassing} is used by drawing from a zero-mean normal distribution with standard deviation of $\sqrt{2/n_i}$, considered to be among the best initializations for shallow ReLU based FFNNs.
 
 \subsection{Forward Pass}
 During the Forward Pass, the data, as the name suggests propagates forward through the network. At each layer, except the input layer, the activations of the previous layer ($a_i$) are weighed by the weights and have the bias added to them:
@@ -30,9 +30,9 @@ z_j = a_i W_{ij} + b_j
 $$
 Then they are passed through the activation function to become the activation of the current layer, which are then passed to the next layer.
 \subsubsection{Activation Functions}
-There are many activation functions that one might choose depending on the task. Usually you use two different activation functions, one for the hidden layers and a different one for the output layer. For hidden layers we use the widely used activation function, the Rectified Linear Unit (\textit{ReLU}) function defined as $ReLU(x)=max(0,x)$. For the output layer of regression FFNNs a simple linear function is used $f(x) = x$
+There are many activation functions that one might choose depending on the task. Usually you use two different activation functions, one for the hidden layers and a different one for the output layer. For hidden layers the widely used activation function is applied; the Rectified Linear Unit (\textit{ReLU}) function defined as $ReLU(x)=max(0,x)$. For the output layer of regression FFNNs a simple linear function is used $f(x) = x$
 \subsection{Backpropagation}
-Backpropagation is the step of the training process, which allows the model to learn. By utilizing gradient descent in the cost function landscape the weights can be updated in the direction and magnitude which results in the updated weights producing a less costly prediction. However, to be able to use gradient descent we need the partial derivatives of the cost function relative to each weight. This can be done fully symbolically, which for large networks is infeasible, but because of the chain rule, it's possible to simplify it into a recursive process in which the derivative of the cost function relative to the weights of the output layer ($j$) is computed:
+Backpropagation is the step of the training process, which allows the model to learn. By utilizing gradient descent in the cost function landscape the weights can be updated in the direction and magnitude which results in the updated weights producing a less costly prediction. However, to be able to use gradient descent the partial derivatives of the cost function relative to each weight are needed. This can be done fully symbolically, which for large networks is infeasible, but because of the chain rule, it's possible to simplify it into a recursive process in which the derivative of the cost function relative to the weights of the output layer ($j$) is computed:
 $$
 \frac{\partial C}{\partial W_{ij}} = 
 \frac{\partial z_j}{\partial W_{ij}} (\frac{\partial C}{\partial z_j})= 
@@ -68,7 +68,7 @@ $\beta_1$ usually set to $0.9$, which means the current magnitude is composed of
 $$
 v_{t} = \beta_2 v_{t-1} + (1-\beta_2) \nabla C(W_i)
 $$
-$\beta_2$ is usually set to $0.999$. Since $m_0$ and $v_0$ are initialized as $0$, then during early training they are small for which we account by bias adjusting:
+$\beta_2$ is usually set to $0.999$. Since $m_0$ and $v_0$ are initialized as $0$, then during early training they are small for which is accounted for by bias adjusting:
 $$
 \hat{m_t} = \frac{\hat{m_{t-1}}}{1-\beta_1^t}, \hat{v_t} = \frac{\hat{v_{t-1}}}{1-\beta_2^t}
 $$

@@ -58,11 +58,11 @@
 \newcommand{\ffnnEpochs}{\textbf{100}}
 
 % Results Total
-\newcommand{\mseDT}{\textbf{FILL IN}}
-\newcommand{\mseDTsklearn}{\textbf{0.2818}}
-\newcommand{\mseFFNN}{\textbf{FILL IN}}
-\newcommand{\mseFFNNsklearn}{\textbf{0.2498}}
-\newcommand{\mseEnsembleTotal}{\textbf{0.4097}}
+\newcommand{\mseDT}{0.2814}
+\newcommand{\mseDTsklearn}{0.2818}
+\newcommand{\mseFFNN}{0.3099}
+\newcommand{\mseFFNNsklearn}{0.2498}
+\newcommand{\mseEnsembleTotal}{0.4097}
 
 
 \subsection{Procedure}
@@ -104,7 +104,14 @@ The final models were initialized with these commands:
     \end{tabular}
     \label{tab:results-overall}
 \end{table}
-As seen in~\autoref{tab:results-overall} the best average performance method overall was M1 - Decision Tree, which had almost the same MSE for our implementation and the sklearn implementation. However, the Feed Forward Neural Network has a better performance ceiling that can be reached, by either training for longer, or having better initialization luck.
+As seen in~\autoref{tab:results-overall} the best average performance method overall was M1 - Decision Tree, which had almost the same MSE for our implementation and the sklearn implementation. However, the Feed Forward Neural Network has a better performance ceiling that can be reached, as showed by the sklearn implementation. The ensemble class is worst performing according to MSE, however based on the distribution of the predicted risk scores~\autoref{fig:risk-prediction-dist} has a well-defined zero Risk part, which does contribute to the MSE being as high, because some data points which it classifies as having zero risk do not necessarily have zero risk, but it is a choice in the architecture of the method. Therefore, for predicting risk scores of policies the Feed Forward Neural Network is the most accurate, but for using the predicted risk score as a premium multiplier, the Ensemble might work better, precisely because of the well-defined zero class.
+
+\begin{figure} [h]
+    \centering
+    \caption{Comparison of Predicted Risk distributions.}
+    \includegraphics[width=1\linewidth]{risk_prediction_distribution.pdf}
+    \label{fig:risk-prediction-dist}
+\end{figure}
 
 \subsubsection{M3 - Ensemble Classification Performance}
 \begin{table}[!h]

@@ -15,10 +15,9 @@ As such, for data points with low credibility the average claim-to-exposure rati
 \begin{figure} [h]
     \centering
     \caption{Histogram of Risk values}
-    \includegraphics[width=1\linewidth]{risk_score_distribution.pdf}
+    \includegraphics[width=0.8\linewidth]{risk_score_distribution.pdf}
     \label{fig:distribution-risk}
 \end{figure}
-
 
 %%%%%%%%%%%%%%%%%%%%%%section%%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{PCA \& Clustering}
@@ -27,13 +26,6 @@ Clustering is defined as an unsupervised learning method, which groups the obser
 For better clustering, the dimensions of the feature space should be reduced, which is why the method called PCA was introduced in this project. P(rincipal) C(omponent) A(nalysis) is a technique of dimensionality reduction which aims to turn the correlated numerical variables into a smaller set of uncorrelated ones. Where, before, the numerical features of \texttt{DrivAge}, \texttt{BonusMalus} or \texttt{Density} could be correlated, after applying the PCA, the data's high dimensionality will be stabilized and any multi-collinearity will be reduced, as the resulting set should be smaller, uncorrelated.
 Further data cleaning ensued for the specific requirements of PCA, such as excluding the categorical variables and standardizing the data to prevent the dominion of large scaled values over the analysis.
 Four principal components need to be used to retain 89\% of the data; which means that without significant loss most of the original information is represented in a lower dimensional space. As such, global structure is preserved and variance is recognized in fewer dimensions.
-
-\begin{figure} [h]
-    \centering
-    {}
-    \caption{PCA with Risk as color | Clustering on PCA data.}
-    \label{fig:PCA-Risk-and-Clustering}
-\end{figure}
 
 The clustering is the following step and from various methods, we applied K-Means clustering on our data, as it's finely compatible with continuous, scaled data, resulting from the principal component analysis. The main idea behind this clustering method is the partitioning of the data into \texttt{k} clusters, \texttt{k} being the number of such groups created, through minimizing the variance between different clusters.
 To find the right value for \texttt{k}, a silhouette score was used as an evaluation metric when trying different values. This score primarily measures similarity of each observation to their own cluster and the quality of the separation between clusters, after which the best one is chosen. The \texttt{k} which maximized the number of the silhouette score, is the one that is chosen for the final \texttt{k} split. 

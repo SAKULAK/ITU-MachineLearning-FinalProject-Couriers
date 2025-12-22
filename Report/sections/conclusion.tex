@@ -2,5 +2,6 @@ A custom Decision Tree and a Feed Forward Neural Network were successfully and c
 
 \subsection{Improvments}
 Model performance might be better if other methods to prepare the data, deal with the imabalance in the dataset were used, or perhaps some interaction terms were found in the data. These all could be explored in future works.
+
 \subsubsection{M3 - Ensemble}
 After review of the resutls of the Ensemble, the decision to train on just class 1 datapoints might have been the wrong decision. Since the classification layer let a lot of 0 class datapoints into the regression layer and the regression layer had no idea that \texttt{Risk} can equal to zero it predicted larger values, leading to a higher MSE. Therefore, training the regression layer on the entire dataset might be preferable. 
