@@ -65,21 +65,24 @@ Where:
 Depending on the parameters the tree is built from this in one of two ways.
 \subsubsection{Recursive}
 The standard way of building a tree. The algorithm starts at the Root. It splits the Root into a Left and Right child. It then moves to the Left child and tries to split it. If it can, it moves into that child's Left child and repeats the process.\\
-As consequences of that it dives as deep as possible into the leftmost branch until it hits a stopping condition. Only then does it backtrack to fill in the right-hand side branches.
+As consequence of that it dives as deep as possible into the leftmost branch until it hits a stopping condition. Only then does it backtrack to fill in the right-hand side branches.
 \subsubsection{Priority Queue}
 This is the method used when the tree is limited by the total number of leaves. The recursive approach would not work with such limitation.
 Instead of diving deep into one branch, the algorithm looks at all current leaf nodes across the entire tree. The priority queue (heap) stores potential "Impurity Decrease" for every leaf.\\
 The algorithm always removes from the queue the node that offers the highest impurity decrease, regardless of where it is in the tree or how deep it is.
 
 \subsection{Stopping Parameters}
-Why, what problems they solve\\
-\\
-Maybe an enumerate of stopping params with simple description of how they work, if that fits, if not use subsubsection for each stopping parameter
+The implementation covers the most important regularization parameters for trees. They are used to stop the tree from growing before it overfits the data. 
+
 \begin{enumerate}
-    \item[a.] \textbf{Max Depth} \\
-        This is the description?
-    \item[b.] \textbf{Minimum Samples to Split} -
-    \item[c.] \textbf{Minimum Samples at Leaf} - 
-    \item[d.] \textbf{Maximum number of Leaves} -
-    \item[e.] \textbf{Minimum Impurity Decrease} -  
+    \item[a.] \textbf{Max Depth}:
+    This parameter limits the height of the tree. The model stops splitting a node once the current depth reaches the specified maximum. It prevents overfitting by avoiding overly complex trees which would capture random noise rather than general patterns.
+    \item[b.] \textbf{Minimum Samples to Split} :
+    This parameter sets the minimum number of data points required in a node to consider splitting it. A node is only eligible for splitting if it contains at least this number of samples. This prevents the model from creating splits based on very small sample sizes which can lead to unreliable decisions.
+    \item[c.] \textbf{Minimum Samples at Leaf} :
+    This parameter ensures that every leaf node has a sufficient amount of samples. Any proposed split that would create a leaf with the amount of samples fewer than this is rejected. 
+    \item[d.] \textbf{Maximum number of Leaves}
+    This is the parameter that required the priority queue method to be implemented. The tree grows iteratively, prioritizing splits that maximize impurity reduction, until the specified number of leaves is reached. It allows the tree to grow deep in important areas of the data while staying shallow in others. 
+    \item[e.] \textbf{Minimum Impurity Decrease} 
+    This parameter is a minimum reduction in impurity required for a split to be accepted. It prevents splits that offer negligible improvement which could otherwise lead to overfitting.
 \end{enumerate}

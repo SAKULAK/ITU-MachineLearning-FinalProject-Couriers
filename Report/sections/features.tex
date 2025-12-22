@@ -36,5 +36,14 @@ Four principal components need to be used to retain 89\% of the data; which mean
 \end{figure}
 
 The clustering is the following step and from various methods, we applied K-Means clustering on our data, as it's finely compatible with continuous, scaled data, resulting from the principal component analysis. The main idea behind this clustering method is the partitioning of the data into \texttt{k} clusters, \texttt{k} being the number of such groups created, through minimizing the variance between different clusters.
-To find the right value for \texttt{k}, a silhouette score was used as an evaluation metric when trying different values. This score primarily measures similarity of each observation to their own cluster and the quality of the separation between clusters, after which the best one is chosen. The \texttt{k} which maximized the number of the silhouette score, is the one that is chosen for the final \texttt{k} split.
+To find the right value for \texttt{k}, a silhouette score was used as an evaluation metric when trying different values. This score primarily measures similarity of each observation to their own cluster and the quality of the separation between clusters, after which the best one is chosen. The \texttt{k} which maximized the number of the silhouette score, is the one that is chosen for the final \texttt{k} split. 
+
+\begin{figure} [h]
+    \centering
+    \caption{PCA with Risk as color | Clustering on PCA data.}
+    \includegraphics[width=1\linewidth]{pca_analysis.png}
+    \label{fig:distribution-claims}
+\end{figure}
+
+The efforts of the code returned \texttt{k=} 2 as the best number of groups the data could be split into. The colors of the figure on the left show these different groups as 2 hues of blue, while the one of the left represents the risk as yellow points, in comparison to the blue data points analyzed.
 In summary of the vein of clustering, meaningful behavior and risk patterns will be displayed together, letting the visualization speak for different groups of the insurance customers.

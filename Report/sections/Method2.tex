@@ -5,7 +5,7 @@ A FFNN is a collection of nodes organized in layers. First, the input layer, whi
 
 Second, the hidden layers; There can be an arbitrary number of hidden layers and of nodes per hidden layer. Generally, the more hidden layers or nodes per layer the more complex the Neural Network becomes, which makes it more prone to overfitting and more computationally heavy to train and run predictions on.\\
 
-Lastly, the output layer. The number of nodes in the output layer depends on the task, but for regression there is just one node, which give the value predicted value for the data points. 
+Lastly, the output layer. The number of nodes in this layer depend on the task, but for regression there is just one node, which returns     the predicted value for the data points. 
 
 \begin{figure} [h]
     \centering
@@ -32,7 +32,7 @@ Then they are passed through the activation function to become the activation of
 \subsubsection{Activation Functions}
 There are many activation functions that one might choose depending on the task. Usually you use two different activation functions, one for the hidden layers and a different one for the output layer. For hidden layers we use the widely used activation function, the Rectified Linear Unit (\textit{ReLU}) function defined as $ReLU(x)=max(0,x)$. For the output layer of regression FFNNs a simple linear function is used $f(x) = x$
 \subsection{Backpropagation}
-Backpropagation is the step of the training process, which allows the model to learn. By utilizing gradient descent in the cost function landscape the weights can be updated in the direction and magnitude which results in the updated weights producing a less costly prediction. However, to be able to use gradient descent we need the partial derivatives of the cost function relative to each weight. This can be done fully symbolically, which for large networks is infeasible, but because of the chain rule, this can be simplified into a recursive process in which the derivative of the cost function relative to the weights of the output layer ($j$) is computed:
+Backpropagation is the step of the training process, which allows the model to learn. By utilizing gradient descent in the cost function landscape the weights can be updated in the direction and magnitude which results in the updated weights producing a less costly prediction. However, to be able to use gradient descent we need the partial derivatives of the cost function relative to each weight. This can be done fully symbolically, which for large networks is infeasible, but because of the chain rule, it's possible to simplify it into a recursive process in which the derivative of the cost function relative to the weights of the output layer ($j$) is computed:
 $$
 \frac{\partial C}{\partial W_{ij}} = 
 \frac{\partial z_j}{\partial W_{ij}} (\frac{\partial C}{\partial z_j})= 

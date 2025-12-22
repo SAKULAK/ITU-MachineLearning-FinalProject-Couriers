@@ -10,14 +10,15 @@ The gap in the \texttt{Risk} metric is used to separate the datapoints into two 
     \label{fig:flowchart-ensemble}
 \end{figure}
 
+
 \subsection{Making Ensembles}
 To combine the models we use the \texttt{StackingClassifier} from sklearn with Logistic Regression as the meta model, with the model predicitons as the meta features. Similarily, for regression the \texttt{StackingRegressor} is used with a Ridge Regressor as the meta model. 
 
 \subsection{Gradient Boosting}
-Gradient boostin is used because it is well suited for complex non-linear decision boudnaries, because of the nature of practically zooming in on feature spcae in areas where the previous trees got its predictionwrong allows it to carve around clusters effectively. However, it also has the disadvantage of baing sensitive to outliers or noise.
+Gradient boostin is used because it is well suited for complex non-linear decision boudnaries, because of the nature of practically zooming in on feature spcae in areas where the previous trees got its predictionwrong allows it to carve around clusters effectively. However, it also has the disadvantage of being sensitive to outliers or noise.
 
 \subsection{Random Forest}
 A Random Forest in contrast to Gradient Boosting is efficient at creating flat decision boundaries which is used to offset the high variance nature of Gradient Boosting creating a solid base for predictions.
 
 \subsection{Feed Forward Neural Network}
-A Feed Forward Neural Network \textit{FFNN} was then chosen to act as an entirely different view of the problem. A FFNN relies on capturing feature interaction patterns to make its prediciton. The features all mix and blend as they propagate through the layers which contrasts nicely with the strict feature space splttiing of tree based methods. In addition, it creates a smooth decsion boundary that may also be able to better capture the differences in the feature space for the datapoints.
+A Feed Forward Neural Network \textit{FFNN} was then chosen to act as an entirely different view of the problem. The model relies on capturing feature interaction patterns to make its prediction. The features all mix and blend as they propagate through the layers which contrasts nicely with the strict feature space splitting of tree based methods. In addition, it creates a smooth decision boundary that may be capable of better capturing the differences in the feature space for the datapoints.

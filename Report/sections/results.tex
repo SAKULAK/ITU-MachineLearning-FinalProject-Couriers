@@ -68,17 +68,16 @@
 
 \subsection{Procedure}
 Before any work being done the dataset was split into two datasets a Training and a Testing set. Any development training was done on the testing set, while the final performance results were taken using the testing set.\\
-After the development of M1 and M2 was done and M3 was decidedd a Random Grid Search with cross validation was performed using sklearn \texttt{RandomizedSerachCV} to find a set of hyperparameters around which an ordinary Grid Search was performed to pinpoint the best parameters.
+After the development of M1 and M2 was done and M3 was decided a Random Grid Search with cross validation was performed using sklearn \texttt{RandomizedSerachCV} to find a set of hyperparameters around which an ordinary Grid Search was ran to pinpoint the best parameters.
 \subsubsection{Training}
 Training was performed on a more balanced dataset, using both undersampling of the datapoints with low Risk and oversampling the higher Risk data points.
 \begin{figure}
     \centering
     \caption{Distribution of Risk on the final training dataset.}
-    \includegraphics[width=1\linewidth]{risk_score_balanced_distribution.pdf}
     \label{fig:distribution-balanced-dataset}
 \end{figure}
 \subsubsection{Evaluation}
-Models were evaluated using MSE as this is the standard to comparing base model performance for regression. The classification portion of the ensemble method was valuated using Precision as we want to make sure that our regression models get as little zero Risk cases since they were not trained on them.
+Models were evaluated using MSE as this is the standard procedure of comparing base model performance for regression. The classification portion of the ensemble method was valuated using Precision to ensure that our regression models get as little zero Risk cases since they were not trained on them.
 
 \subsection{Final Results}
 The final models were initialized with these commands:
